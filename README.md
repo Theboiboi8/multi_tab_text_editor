@@ -1,15 +1,39 @@
-# Iced Template
-A simple template for developing a GUI application with Rust and [iced](https://iced.rs).
+# Multi-Tab Text Editor
 
-Uses `iced::application::Application`
+A text editor that supports syntax highlighting and multiple files open at once.
+
 ## Usage:
+
 ```shell
-cargo generate --git gh:Theboiboi8/iced_template.git --name <name>
+# Clone the git repo
+git clone https://github.com/theboiboi8/multi_tab_text_editor.git
+# Change working directory to the repo directory
+cd multi_tab_text_editor
+# Build the project
+cargo build --release
 ```
 
-where `<name>` is the name of your project.
+Afterward, the text editor executable can be found under `target/release`
 
-> [!IMPORTANT]
-> You need to have `cargo-generate` installed for the above step.
-> 
-> Install it using `cargo install cargo-generate`
+## Licensing
+
+Dual-licensed under either the [Apache License, Version 2.0](LICENSE-APACHE)
+or the [MIT license](LICENSE-MIT) at your option.
+
+## Contributing
+
+Unless explicitly stated otherwise, any contribution intentionally
+submitted for inclusion in the work by you, as defined in the [Apache-2.0
+license](LICENSE-APACHE), shall be dual-licensed as above,
+without any additional terms or conditions.
+
+## Acknowledgements
+
+This project uses the [JetBrains Mono](https://www.jetbrains.com/lp/mono/) font,
+created by [JetBrains s.r.o.](https://www.jetbrains.com)
+
+This project uses the [Uncut Sans](https://uncut.wtf/sans-serif/uncut-sans/) font,
+created by [UNCUT.wtf](https://uncut.wtf)
+
+This project uses the [Bootstrap Icons](https://icons.getbootstrap.com/) font,
+created by [Bootstrap](https://getbootstrap.com/)
