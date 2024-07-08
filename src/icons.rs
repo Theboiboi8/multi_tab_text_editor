@@ -23,6 +23,19 @@ pub fn close_icon<'a>(size: impl Into<Pixels>) -> Element<'a, Message> {
 	icon('\u{F659}', size)
 }
 
+pub fn info_icon<'a>(size: impl Into<Pixels>) -> Element<'a, Message> {
+	icon('\u{F646}', size)
+}
+
+pub fn git_icon<'a>(size: impl Into<Pixels>) -> Element<'a, Message> {
+	icon('\u{F69D}', size)
+}
+
+pub fn external_icon<'a>(size: impl Into<Pixels>) -> Element<'a, Message> {
+	icon('\u{F144}', size)
+}
+
+
 fn icon<'a>(codepoint: char, size: impl Into<Pixels>) -> Element<'a, Message> {
 	const ICON_FONT: Font = Font::with_name("bootstrap-icons");
 
