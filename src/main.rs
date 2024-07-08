@@ -1,18 +1,21 @@
-#![windows_subsystem = "windows"]
-
-mod icons;
+#![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 use std::io;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 
-use iced::{alignment, Application, Command, Element, executor, Font, highlighter, Length, Pixels, Settings, Size, Theme, theme, window};
+use iced::{Alignment, Application, Background, Border, Command, Element, executor, Font, highlighter, Length, Pixels, Settings, Size, Theme, theme, window};
+use iced::alignment::Horizontal;
 use iced::highlighter::Highlighter;
+use iced::theme::Button;
 use iced::widget::{button, column, container, horizontal_space, row, Row, text, text_editor, tooltip};
+use iced::widget::button::Appearance;
 use iced::window::{Level, Position};
 use iced::window::settings::PlatformSpecific;
-use iced_aw::menu::{Menu, Item};
 use iced_aw::{menu, menu_bar, menu_items};
+use iced_aw::menu::{Item, Menu};
+
+mod icons;
 
 const UNCUT_SANS: Font = Font::with_name("UncutSans");
 const JETBRAINS_MONO: Font = Font::with_name("JetBrainsMono");
@@ -99,6 +102,7 @@ enum Message {
 	SaveAs,
 	FileSaved(Result<PathBuf, Error>),
 	Close,
+	CloseIndex(usize),
 	SelectFile(usize),
 	None
 }
@@ -201,6 +205,25 @@ impl Application for Editor {
 
 				Command::none()
 			}
+			Message::CloseIndex(index) => {
+				let mut should_remove = true;
+
+				if self.current != index {
+					self.current = 0;
+				} else if self.files.len() == 1 {
+					should_remove = false;
+				} else {
+					self.current = self.files.len() - 2;
+				}
+
+				if should_remove {
+					self.files.remove(index);
+				} else {
+					self.files[self.current] = File::empty();
+				}
+
+				Command::none()
+			}
 			Message::SelectFile(index) => {
 				self.current = index;
 
@@ -224,15 +247,45 @@ impl Application for Editor {
 			.spacing(5.0);
 
 		let menu_bar = menu_bar![
-			(menu_button_s("File", Message::None), {
+			(menubar_button(text("File"), None, Message::None), {
 				let sub_menu = menu_tpl_2(menu_items![
-					(menu_button("New", Message::New))
-					(menu_button("Open...", Message::Open))
-					(menu_button("Save", Message::Save))
-					(menu_button("Save As", Message::SaveAs))
-					(menu_button("Close", Message::Close))
+					(menu_button(
+						row![
+							icons::new_icon(12),
+							text(" New"),
+						].align_items(Alignment::Center),
+						Message::New
+					))
+					(menu_button(
+						row![
+							icons::open_icon(12),
+							text(" Open..."),
+						].align_items(Alignment::Center),
+						Message::Open
+					))
+					(menu_button(
+						row![
+							icons::save_icon(12),
+							text(" Save"),
+						].align_items(Alignment::Center),
+						Message::Save
+					))
+					(menu_button(
+						row![
+							icons::save_as_icon(12),
+							text(" Save As"),
+						].align_items(Alignment::Center),
+						Message::SaveAs
+					))
+					(menu_button(
+						row![
+							icons::close_icon(12),
+							text(" Close"),
+						].align_items(Alignment::Center),
+						Message::Close
+					))
 				]).width(180.0);
-				
+
 				sub_menu
 			})
 		].draw_path(menu::DrawPath::Backdrop);
@@ -240,7 +293,7 @@ impl Application for Editor {
 		let mut tabs = Vec::new();
 
 		for (index, file) in self.files.iter().enumerate() {
-			tabs.push(action(
+			tabs.push(tab(
 				text(format!(
 					"{}{}",
 					match &file.path {
@@ -270,10 +323,11 @@ impl Application for Editor {
 					} else {
 						""
 					}
-				)).into(),
-				"Open this file",
+				))
+					.width(Length::Fill)
+					.into(),
 				Message::SelectFile(index),
-				Some(Length::Fill),
+				index,
 				self.current == index
 			));
 		}
@@ -340,16 +394,16 @@ fn action<'a>(
 	highlighted: bool,
 ) -> Element<'a, Message> {
 	tooltip(
-		button(container(content).width(if width.is_some() {
+		button(container(content).width(if let Some(width) = width {
 			#[allow(clippy::unnecessary_unwrap)]
-			width.unwrap()
+			width
 		} else {
 			Length::Fixed(24.0)
 		}).center_x())
 			.style(if highlighted {
-				theme::Button::Primary
+				Button::Primary
 			} else {
-				theme::Button::Secondary
+				Button::Secondary
 			})
 			.on_press(on_press)
 			.padding([5, 10]),
@@ -360,38 +414,116 @@ fn action<'a>(
 		.into()
 }
 
-fn base_button<'a>(
+fn menubar_button<'a>(
+	content: impl Into<Element<'a, Message>>,
+	tooltip: Option<&'a str>,
+	action: Message,
+) -> Element<'a, Message> {
+	let inner = button(
+		container(content.into())
+			.width(Length::Shrink)
+			.center_x()
+			.center_y()
+			.padding([8, 4])
+	)
+		.on_press(action)
+		.style(Button::Text);
+
+	if let Some(tooltip_label) = tooltip {
+		iced::widget::tooltip(
+			inner,
+			tooltip_label,
+			tooltip::Position::Bottom,
+		)
+			.style(theme::Container::Box)
+			.into()
+	} else {
+		inner.into()
+	}
+}
+
+#[derive(Copy, Clone)]
+struct MenuButtonStyle;
+
+impl button::StyleSheet for MenuButtonStyle {
+	type Style = Theme;
+
+	fn active(&self, style: &Self::Style) -> Appearance {
+		let palette = style.extended_palette();
+		
+		let appearance = Appearance {
+			border: Border::with_radius(2),
+			..Appearance::default()
+		};
+		
+		Appearance {
+			text_color: palette.background.base.text,
+			..appearance
+		}
+	}
+	
+	fn hovered(&self, style: &Self::Style) -> Appearance {
+		let palette = style.extended_palette();
+
+		let active = self.active(style);
+
+		Appearance {
+			background: Some(Background::from(palette.background.weak.color)),
+			..active
+		}
+	}
+
+	fn pressed(&self, style: &Self::Style) -> Appearance {
+		self.hovered(style)
+	}
+}
+
+fn menu_button<'a>(
 	content: impl Into<Element<'a, Message>>,
 	action: Message,
-) -> button::Button<'a, Message> {
-	button(content)
-		.padding([4, 8])
-		.style(theme::Button::Secondary)
-		.on_press(action)
-}
-
-fn labeled_button(
-	label: &str,
-	action: Message,
-) -> button::Button<Message, Theme, iced::Renderer> {
-	base_button(
-		text(label).vertical_alignment(alignment::Vertical::Center),
-		action,
+) -> Element<'a, Message> {
+	let inner = button(
+		container(content.into())
+			.width(Length::Fill)
+			.align_x(Horizontal::Left)
+			.center_y()
+			.padding([2, 4])
 	)
+		.on_press(action)
+		.style(Button::Custom(Box::new(MenuButtonStyle)));
+
+	inner.into()
 }
 
-fn menu_button(
-	label: &str,
-	action: Message
-) -> button::Button<Message, Theme, iced::Renderer> {
-	labeled_button(label, action).width(Length::Fill)
-}
-
-fn menu_button_s(
-	label: &str,
-	action: Message
-) -> button::Button<Message, Theme, iced::Renderer> {
-	labeled_button(label, action).width(Length::Shrink)
+fn tab(
+	content: Element<Message>,
+	on_press: Message,
+	index: usize,
+	highlighted: bool,
+) -> Element<Message> {
+	button(
+		container(
+			row![
+					content,
+					button(icons::close_icon(16))
+						.style(Button::Custom(Box::new(MenuButtonStyle)))
+						.width(Length::Shrink)
+						.on_press(Message::CloseIndex(index))
+				]
+				.align_items(Alignment::Center)
+		)
+			.width(128)
+			.align_x(Horizontal::Center)
+			.center_y()
+	)
+		.style(if highlighted {
+			Button::Primary
+		} else {
+			Button::Custom(Box::new(MenuButtonStyle))
+		})
+		.on_press(on_press)
+		.padding([5, 10])
+		.into()
 }
 
 async fn pick_file() -> Result<(PathBuf, Arc<String>), Error> {

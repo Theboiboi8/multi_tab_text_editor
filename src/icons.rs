@@ -1,33 +1,33 @@
-use iced::{Element, Font};
+use iced::{Element, Font, Pixels};
 use iced::widget::text;
 
 use crate::Message;
 
-pub fn new_icon<'a>() -> Element<'a, Message> {
-	icon('\u{F37D}')
+pub fn new_icon<'a>(size: impl Into<Pixels>) -> Element<'a, Message> {
+	icon('\u{F37D}', size)
 }
 
-pub fn save_icon<'a>() -> Element<'a, Message> {
-	icon('\u{F7D8}')
+pub fn save_icon<'a>(size: impl Into<Pixels>) -> Element<'a, Message> {
+	icon('\u{F7D8}', size)
 }
 
-pub fn save_as_icon<'a>() -> Element<'a, Message> {
-	icon('\u{F30A}')
+pub fn save_as_icon<'a>(size: impl Into<Pixels>) -> Element<'a, Message> {
+	icon('\u{F30A}', size)
 }
 
-pub fn open_icon<'a>() -> Element<'a, Message> {
-	icon('\u{F392}')
+pub fn open_icon<'a>(size: impl Into<Pixels>) -> Element<'a, Message> {
+	icon('\u{F392}', size)
 }
 
-pub fn close_icon<'a>() -> Element<'a, Message> {
-	icon('\u{F659}')
+pub fn close_icon<'a>(size: impl Into<Pixels>) -> Element<'a, Message> {
+	icon('\u{F659}', size)
 }
 
-fn icon<'a>(codepoint: char) -> Element<'a, Message> {
+fn icon<'a>(codepoint: char, size: impl Into<Pixels>) -> Element<'a, Message> {
 	const ICON_FONT: Font = Font::with_name("bootstrap-icons");
 
 	text(codepoint)
 		.font(ICON_FONT)
-		.size(18)
+		.size(size)
 		.into()
 }
