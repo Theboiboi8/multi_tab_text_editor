@@ -109,6 +109,7 @@ enum Message {
 	CloseIndex(usize),
 	SelectFile(usize),
 	OpenURL(&'static str),
+	ShowInExplorer(PathBuf),
 	ShowAbout,
 	HideAbout,
 	None
@@ -141,6 +142,7 @@ impl Application for Editor {
 		)
 	}
 
+	#[allow(clippy::too_many_lines)]
 	fn update(&mut self, message: Message) -> Command<Message> {
 		match message {
 			Message::Edit(action) => {
@@ -241,7 +243,18 @@ impl Application for Editor {
 			Message::OpenURL(url) => {
 				if open::that(url).is_err() {
 					eprintln!("Failed to open url {url}");
-				};
+				}
+
+				Command::none()
+			}
+			Message::ShowInExplorer(path) => {
+				let path = path.parent();
+
+				if let Some(path) = path {
+					if open::that(path).is_err() {
+						eprintln!("Failed to open path {}", path.display());
+					}
+				}
 
 				Command::none()
 			}
@@ -341,6 +354,22 @@ impl Application for Editor {
 						].align_items(Alignment::Center),
 						Message::SaveAs
 					))
+					(if let Some(path) = self.files[self.current].path.clone() {
+						menu_button(
+							row![
+								icons::eye_icon(12),
+								text("   Show in Explorer"),
+							].align_items(Alignment::Center),
+							Message::ShowInExplorer(path)
+						)
+					} else {
+						menu_button_disabled(
+							row![
+								icons::eye_icon(12),
+								text("   Show in Explorer"),
+							].align_items(Alignment::Center),
+						)
+					})
 					(menu_button(
 						row![
 							icons::close_icon(12),
@@ -562,6 +591,21 @@ fn menu_button<'a>(
 			.padding([2, 4])
 	)
 		.on_press(action)
+		.style(Button::Custom(Box::new(MenuButtonStyle)));
+
+	inner.into()
+}
+
+fn menu_button_disabled<'a>(
+	content: impl Into<Element<'a, Message>>,
+) -> Element<'a, Message> {
+	let inner = button(
+		container(content.into())
+			.width(Length::Fill)
+			.align_x(Horizontal::Left)
+			.center_y()
+			.padding([2, 4])
+	)
 		.style(Button::Custom(Box::new(MenuButtonStyle)));
 
 	inner.into()

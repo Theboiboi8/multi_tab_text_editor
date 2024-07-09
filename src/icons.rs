@@ -35,6 +35,9 @@ pub fn external_icon<'a>(size: impl Into<Pixels>) -> Element<'a, Message> {
 	icon('\u{F144}', size)
 }
 
+pub fn eye_icon<'a>(size: impl Into<Pixels>) -> Element<'a, Message> {
+	icon('\u{F341}', size)
+}
 
 fn icon<'a>(codepoint: char, size: impl Into<Pixels>) -> Element<'a, Message> {
 	const ICON_FONT: Font = Font::with_name("bootstrap-icons");
