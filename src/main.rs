@@ -4,16 +4,18 @@ use std::io;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 
-use iced::{Alignment, Application, Background, Border, Command, Element, executor, Font, highlighter, Length, Pixels, Settings, Size, Theme, theme, window};
+use iced::{Alignment, Application, Background, Border, Color, Command, Element, executor, Font, highlighter, Length, Pixels, Settings, Size, Theme, theme, window};
 use iced::alignment::Horizontal;
 use iced::highlighter::Highlighter;
 use iced::theme::Button;
-use iced::widget::{button, column, container, horizontal_space, row, Row, text, text_editor, tooltip};
+use iced::widget::{button, container, horizontal_space, row, Row, text, text_editor, tooltip};
 use iced::widget::button::Appearance;
+use iced::widget::column as col;
 use iced::window::{Level, Position};
 use iced::window::settings::PlatformSpecific;
-use iced_aw::{menu, menu_bar, menu_items};
+use iced_aw::{card, menu, menu_bar, menu_items, Modal, quad, style};
 use iced_aw::menu::{Item, Menu};
+use iced_aw::widgets::InnerBounds;
 
 mod icons;
 
@@ -24,9 +26,9 @@ fn main() -> iced::Result {
 	Editor::run(Settings {
 		id: None,
 		window: window::Settings {
-			size: Size::new(1024.0, 768.0),
+			size: Size::new(1024.0, 756.0),
 			position: Position::default(),
-			min_size: None,
+			min_size: Some(Size::new(420.0, 280.0)),
 			max_size: None,
 			visible: true,
 			resizable: true,
@@ -59,6 +61,8 @@ struct Editor {
 	files: Vec<File>,
 	current: usize,
 	error: Option<Error>,
+	about_shown: bool,
+	theme: Theme
 }
 
 struct File {
@@ -104,6 +108,9 @@ enum Message {
 	Close,
 	CloseIndex(usize),
 	SelectFile(usize),
+	OpenURL(&'static str),
+	ShowAbout,
+	HideAbout,
 	None
 }
 
@@ -119,6 +126,8 @@ impl Application for Editor {
 				files: vec![File::sample()],
 				error: None,
 				current: 0,
+				about_shown: false,
+				theme: Theme::GruvboxDark
 			},
 			Command::none()
 		)
@@ -228,7 +237,24 @@ impl Application for Editor {
 				self.current = index;
 
 				Command::none()
-			},
+			}
+			Message::OpenURL(url) => {
+				if open::that(url).is_err() {
+					eprintln!("Failed to open url {url}");
+				};
+
+				Command::none()
+			}
+			Message::ShowAbout => {
+				self.about_shown = true;
+
+				Command::none()
+			}
+			Message::HideAbout => {
+				self.about_shown = false;
+
+				Command::none()
+			}
 			Message::None => {
 				Command::none()
 			}
@@ -237,6 +263,44 @@ impl Application for Editor {
 
 	#[allow(clippy::too_many_lines)]
 	fn view(&self) -> Element<'_, Self::Message> {
+		let card = if self.about_shown {
+			Some(
+				card(
+					row![
+						text("About")
+							.width(Length::Fill)
+							.size(24),
+						button(icons::close_icon(16))
+							.style(Button::Custom(Box::new(MenuButtonStyle)))
+							.width(Length::Shrink)
+							.on_press(Message::HideAbout)
+					].align_items(Alignment::Center),
+					col![
+						text("Multi Tab Text Editor"),
+						text("A text editor that supports syntax \
+						highlighting and multiple files open at once."),
+						separator(),
+						text("Created by Theboiboi8"),
+						text("Build using Rust"),
+						separator(),
+						row![
+							text("Source code is available on GitHub "),
+							button(row!["here", icons::external_icon(13)].align_items(Alignment::Center))
+								.style(theme::Button::Text)
+								.padding(0)
+								.height(Length::Shrink)
+								.on_press(Message::OpenURL("https://github.com/Theboiboi8/multi_tab_text_editor"))
+						]
+					]
+				)
+					.style(style::card::CardStyles::Secondary)
+					.width(640)
+					.height(360)
+			)
+		} else {
+			None
+		};
+
 		//let menu_tpl_1 = |items| Menu::new(items)
 		//	.max_width(180.0)
 		//	.offset(15.0)
@@ -252,37 +316,58 @@ impl Application for Editor {
 					(menu_button(
 						row![
 							icons::new_icon(12),
-							text(" New"),
+							text("   New"),
 						].align_items(Alignment::Center),
 						Message::New
 					))
 					(menu_button(
 						row![
 							icons::open_icon(12),
-							text(" Open..."),
+							text("   Open..."),
 						].align_items(Alignment::Center),
 						Message::Open
 					))
 					(menu_button(
 						row![
 							icons::save_icon(12),
-							text(" Save"),
+							text("   Save"),
 						].align_items(Alignment::Center),
 						Message::Save
 					))
 					(menu_button(
 						row![
 							icons::save_as_icon(12),
-							text(" Save As"),
+							text("   Save As"),
 						].align_items(Alignment::Center),
 						Message::SaveAs
 					))
 					(menu_button(
 						row![
 							icons::close_icon(12),
-							text(" Close"),
+							text("   Close"),
 						].align_items(Alignment::Center),
 						Message::Close
+					))
+				]).width(180.0);
+
+				sub_menu
+			})
+
+			(menubar_button(text("Help"), None, Message::None), {
+				let sub_menu = menu_tpl_2(menu_items![
+					(menu_button(
+						row![
+							icons::info_icon(12),
+							text("   About"),
+						].align_items(Alignment::Center),
+						Message::ShowAbout
+					))
+					(menu_button(
+						row![
+							icons::git_icon(12),
+							text("   Source"),
+						].align_items(Alignment::Center),
+						Message::OpenURL("https://github.com/Theboiboi8/multi_tab_text_editor")
 					))
 				]).width(180.0);
 
@@ -376,42 +461,29 @@ impl Application for Editor {
 			row![status, horizontal_space(), position]
 		};
 
-		container(column![menu_bar, tabs, input, status_bar].spacing(10))
-			.padding(10)
-			.into()
+		Modal::new(
+			container(col![menu_bar, tabs, input, status_bar].spacing(10))
+				.padding(10),
+			card
+		).into()
 	}
 
 	fn theme(&self) -> Theme {
-		Theme::KanagawaDragon
+		self.theme.clone()
 	}
 }
 
-fn action<'a>(
-	content: Element<'a, Message>,
-	label: &'a str,
-	on_press: Message,
-	width: Option<Length>,
-	highlighted: bool,
-) -> Element<'a, Message> {
-	tooltip(
-		button(container(content).width(if let Some(width) = width {
-			#[allow(clippy::unnecessary_unwrap)]
-			width
-		} else {
-			Length::Fixed(24.0)
-		}).center_x())
-			.style(if highlighted {
-				Button::Primary
-			} else {
-				Button::Secondary
-			})
-			.on_press(on_press)
-			.padding([5, 10]),
-		label,
-		tooltip::Position::FollowCursor,
-	)
-		.style(theme::Container::Box)
-		.into()
+fn separator() -> quad::Quad {
+	quad::Quad {
+		quad_color: Color::from([0.5; 3]).into(),
+		quad_border: Border {
+			radius: [4.0; 4].into(),
+			..Default::default()
+		},
+		inner_bounds: InnerBounds::Ratio(0.98, 0.2),
+		height: Length::Fixed(20.0),
+		..Default::default()
+	}
 }
 
 fn menubar_button<'a>(
@@ -450,18 +522,18 @@ impl button::StyleSheet for MenuButtonStyle {
 
 	fn active(&self, style: &Self::Style) -> Appearance {
 		let palette = style.extended_palette();
-		
+
 		let appearance = Appearance {
 			border: Border::with_radius(2),
 			..Appearance::default()
 		};
-		
+
 		Appearance {
 			text_color: palette.background.base.text,
 			..appearance
 		}
 	}
-	
+
 	fn hovered(&self, style: &Self::Style) -> Appearance {
 		let palette = style.extended_palette();
 
