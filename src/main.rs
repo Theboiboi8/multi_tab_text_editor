@@ -8,9 +8,8 @@ use iced::{Alignment, Application, Background, Border, Color, Command, Element, 
 use iced::alignment::Horizontal;
 use iced::highlighter::Highlighter;
 use iced::theme::Button;
-use iced::widget::{button, container, horizontal_space, row, Row, text, text_editor, tooltip};
+use iced::widget::{button, container, horizontal_space, row, column, Row, text, text_editor, tooltip};
 use iced::widget::button::Appearance;
-use iced::widget::column as col;
 use iced::window::{Level, Position};
 use iced::window::settings::PlatformSpecific;
 use iced_aw::{card, menu, menu_bar, menu_items, Modal, quad, style};
@@ -288,7 +287,7 @@ impl Application for Editor {
 							.width(Length::Shrink)
 							.on_press(Message::HideAbout)
 					].align_items(Alignment::Center),
-					col![
+					column![
 						text("Multi Tab Text Editor"),
 						text("A text editor that supports syntax \
 						highlighting and multiple files open at once."),
@@ -491,7 +490,7 @@ impl Application for Editor {
 		};
 
 		Modal::new(
-			container(col![menu_bar, tabs, input, status_bar].spacing(10))
+			container(column![menu_bar, tabs, input, status_bar].spacing(10))
 				.padding(10),
 			card
 		).into()
@@ -525,7 +524,7 @@ fn menubar_button<'a>(
 			.width(Length::Shrink)
 			.center_x()
 			.center_y()
-			.padding([8, 4])
+			.padding([2, 4])
 	)
 		.on_press(action)
 		.style(Button::Text);
