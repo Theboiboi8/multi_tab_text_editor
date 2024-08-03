@@ -10,9 +10,8 @@ use iced::{
 	Size, Theme, window,
 };
 use iced::highlighter::Highlighter;
-use iced::widget::{
-	column as iced_column, container, horizontal_space, row, Row, text, text_editor,
-};
+use iced::widget::{Column, container, horizontal_space, row, Row, text, text_editor};
+use iced::widget::combo_box::State;
 use iced::window::{icon, Level, Position};
 use iced::window::settings::PlatformSpecific;
 use iced_aw::{menu, menu_bar, menu_items, Modal};
@@ -49,7 +48,9 @@ fn main() -> iced::Result {
 			include_bytes!("../assets/JetBrainsMono.ttf")
 				.as_slice()
 				.into(),
-			include_bytes!("../assets/UncutSans.ttf").as_slice().into(),
+			include_bytes!("../assets/UncutSans.ttf")
+				.as_slice()
+				.into(),
 		],
 		default_font: UNCUT_SANS,
 		default_text_size: Pixels(13.0),
@@ -64,6 +65,7 @@ struct Editor {
 	theme: Theme,
 	modal_shown: bool,
 	modal_type: ModalType,
+	themes: State<Theme>,
 }
 
 struct File {
@@ -110,13 +112,39 @@ enum Message {
 	ShowInExplorer(PathBuf),
 	ShowModal(ModalType),
 	HideModal,
+	SelectTheme(Theme),
 	None,
 }
 
 #[derive(Debug, Clone)]
 enum ModalType {
 	About,
+	Settings,
 }
+
+pub const THEMES: [Theme; 21] = [
+	Theme::Light,
+	Theme::Dark,
+	Theme::Dracula,
+	Theme::Nord,
+	Theme::SolarizedLight,
+	Theme::SolarizedDark,
+	Theme::GruvboxLight,
+	Theme::GruvboxDark,
+	Theme::CatppuccinLatte,
+	Theme::CatppuccinFrappe,
+	Theme::CatppuccinMacchiato,
+	Theme::CatppuccinMocha,
+	Theme::TokyoNight,
+	Theme::TokyoNightStorm,
+	Theme::TokyoNightLight,
+	Theme::KanagawaWave,
+	Theme::KanagawaDragon,
+	Theme::KanagawaLotus,
+	Theme::Moonfly,
+	Theme::Nightfly,
+	Theme::Oxocarbon,
+];
 
 impl Application for Editor {
 	type Executor = executor::Default;
@@ -133,6 +161,7 @@ impl Application for Editor {
 				modal_shown: false,
 				modal_type: ModalType::About,
 				theme: Theme::GruvboxDark,
+				themes: State::new(THEMES.to_vec())
 			},
 			Command::none(),
 		)
@@ -265,6 +294,11 @@ impl Application for Editor {
 
 				Command::none()
 			}
+			Message::SelectTheme(theme) => {
+				self.theme = theme;
+				
+				Command::none()
+			}
 			Message::None => Command::none(),
 		}
 	}
@@ -274,6 +308,7 @@ impl Application for Editor {
 		let card = if self.modal_shown {
 			Some(match self.modal_type {
 				ModalType::About => editor::components::about_modal(),
+				ModalType::Settings => editor::components::settings_modal(self),
 			})
 		} else {
 			None
@@ -332,6 +367,14 @@ impl Application for Editor {
                             .align_items(Alignment::Center),
                         Message::Close
                     )
+                )(
+	                editor::components::separator()
+                )(
+	                editor::components::menu_button(
+		                row![editor::icons::settings_icon(12), text("   Settings"),]
+		                    .align_items(Alignment::Center),
+		                Message::ShowModal(ModalType::Settings)
+	                )
                 )])
                 .width(180.0);
 
@@ -430,7 +473,14 @@ impl Application for Editor {
 		};
 
 		Modal::new(
-			container(iced_column![menu_bar, tabs, input, status_bar].spacing(10)).padding(10),
+			container(
+				Column::new()
+					.push(menu_bar)
+					.push(tabs)
+					.push(input)
+					.push(status_bar)
+					.spacing(10)
+			).padding(10),
 			card,
 		)
 			.into()
