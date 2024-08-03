@@ -1,4 +1,5 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
+#![warn(clippy::perf, clippy::pedantic)]
 
 use std::io;
 use std::path::{Path, PathBuf};
