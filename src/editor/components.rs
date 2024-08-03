@@ -1,9 +1,9 @@
 use iced::{Alignment, Application, Background, Border, Color, Element, Length, Theme, theme};
 use iced::alignment::Horizontal;
 use iced::theme::Button;
-use iced::widget::{button, container, row, tooltip};
+use iced::widget::{button, container, row, tooltip, column as iced_column, text};
 use iced::widget::button::Appearance;
-use iced_aw::quad;
+use iced_aw::{card, quad, style};
 use iced_aw::widgets::InnerBounds;
 
 use crate::editor::icons;
@@ -146,5 +146,40 @@ pub fn tab(
 		})
 		.on_press(on_press)
 		.padding([5, 10])
+		.into()
+}
+
+pub fn about_modal<'a>() -> Element<'a, Message> {
+	card(
+		row![
+						text("About")
+							.width(Length::Fill)
+							.size(24),
+						button(icons::close_icon(16))
+							.style(Button::Custom(Box::new(MenuButtonStyle)))
+							.width(Length::Shrink)
+							.on_press(Message::HideModal)
+					].align_items(Alignment::Center),
+		iced_column![
+						text("Multi Tab Text Editor"),
+						text("A text editor that supports syntax \
+						highlighting and multiple files open at once."),
+						separator(),
+						text("Created by Theboiboi8"),
+						text("Build using Rust"),
+						separator(),
+						row![
+							text("Source code is available on GitHub "),
+							button(row!["here", icons::external_icon(13)].align_items(Alignment::Center))
+								.style(Button::Text)
+								.padding(0)
+								.height(Length::Shrink)
+								.on_press(Message::OpenURL("https://github.com/Theboiboi8/multi_tab_text_editor"))
+						]
+					]
+	)
+		.style(style::card::CardStyles::Secondary)
+		.width(640)
+		.height(360)
 		.into()
 }
