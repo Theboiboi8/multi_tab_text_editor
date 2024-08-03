@@ -11,6 +11,6 @@ publish = false
 [dependencies]
 iced = { version = "0.12", features = ["tokio", "highlighter"] }
 iced_aw = { version = "0.9", default-features = false, features = ["card", "menu", "quad", "modal"] }
-tokio = { version = "1.38", features = ["full"] }
+tokio = { version = "1.39", features = ["full"] }
 rfd = "0.14"
-open = "5.2.0"
+open = "5.3.0"
