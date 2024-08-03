@@ -20,8 +20,8 @@ use iced_aw::{menu, menu_bar, menu_items, Modal};
 
 mod editor;
 
-const UNCUT_SANS: Font = Font::with_name("UncutSans");
-const JETBRAINS_MONO: Font = Font::with_name("JetBrainsMono");
+pub const UNCUT_SANS: Font = Font::with_name("UncutSans");
+pub const JETBRAINS_MONO: Font = Font::with_name("JetBrainsMono");
 
 fn main() -> iced::Result {
 	Editor::run(Settings {
