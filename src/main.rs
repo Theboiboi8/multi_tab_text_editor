@@ -240,19 +240,15 @@ impl Application for Editor {
 				Command::none()
 			}
 			Message::OpenURL(url) => {
-				if open::that(url).is_err() {
+				if opener::open(url).is_err() {
 					eprintln!("Failed to open url {url}");
 				}
 
 				Command::none()
 			}
 			Message::ShowInExplorer(path) => {
-				let path = path.parent();
-
-				if let Some(path) = path {
-					if open::that(path).is_err() {
-						eprintln!("Failed to open path {}", path.display());
-					}
+				if opener::open(path.clone()).is_err() {
+					eprintln!("Failed to open path {}", path.display());
 				}
 
 				Command::none()
