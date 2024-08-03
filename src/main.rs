@@ -5,18 +5,18 @@ use std::io;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 
+use iced::{
+	Alignment, Application, Command, Element, executor, Font, highlighter, Length, Pixels, Settings,
+	Size, Theme, window,
+};
 use iced::highlighter::Highlighter;
 use iced::widget::{
-	column as iced_column, container, horizontal_space, row, text, text_editor, Row,
+	column as iced_column, container, horizontal_space, row, Row, text, text_editor,
 };
+use iced::window::{icon, Level, Position};
 use iced::window::settings::PlatformSpecific;
-use iced::window::{Level, Position};
-use iced::{
-	executor, highlighter, window, Alignment, Application, Command, Element, Font, Length, Pixels,
-	Settings, Size, Theme,
-};
-use iced_aw::menu::{Item, Menu};
 use iced_aw::{menu, menu_bar, menu_items, Modal};
+use iced_aw::menu::{Item, Menu};
 
 mod editor;
 
@@ -36,7 +36,8 @@ fn main() -> iced::Result {
 			decorations: true,
 			transparent: false,
 			level: Level::default(),
-			icon: None,
+			icon: Some(icon::from_file_data(include_bytes!("../assets/icon.png"), None)
+				.unwrap()),
 			platform_specific: PlatformSpecific::default(),
 			exit_on_close_request: true,
 		},

@@ -1,4 +1,4 @@
-use iced::{Alignment, Application, Background, Border, Color, Element, Length, Theme, theme};
+use iced::{Alignment, Background, Border, Color, Element, Length, Theme, theme};
 use iced::alignment::Horizontal;
 use iced::theme::Button;
 use iced::widget::{button, container, row, tooltip, column as iced_column, text};

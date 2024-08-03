@@ -1,3 +1,9 @@
+<div align="center">
+
+![Multi-Tab Text Editor Icon](assets/icon.svg)
+
+</div>
+
 # Multi-Tab Text Editor
 
 A text editor that supports syntax highlighting and multiple files open at once.
