@@ -29,22 +29,23 @@ pub static INTER: LazyLock<Font> = LazyLock::new(|| {
 	Font::with_name("Inter")
 });
 
-pub static CONFIG_PATH: LazyLock<&Path> = LazyLock::new(|| {
-	if cfg!(target_os = "windows") {
-		Path::new(".\\multi_tab_text_editor_config.json")
-	} else {
-		Path::new(
-			format!(
-				"{}/multi_tab_text_editor_config.json",
-				std::env::var("HOME").unwrap()
-			).leak()
-		)
+pub static CONFIG_PATH: LazyLock<PathBuf> = LazyLock::new(|| {
+	let config_path = dirs::config_dir().unwrap_or_default();
+	
+	let editor_config_dir = config_path.join("multi_tab_text_editor");
+	
+	let config_file_name = PathBuf::from("multi_tab_text_editor_config.json");
+	
+	if !editor_config_dir.exists() && std::fs::create_dir_all(&editor_config_dir).is_err() {
+		eprintln!("Failed to create config directory");
 	}
+	
+	editor_config_dir.join(config_file_name)
 });
 
 pub static CONFIG: LazyLock<Option<SettingsState>> = LazyLock::new(|| {
-	let config_path = *CONFIG_PATH;
-	
+	let config_path = &*CONFIG_PATH;
+
 	if config_path.exists() {
 		let config: Option<SettingsState> = serde_json::from_str(
 			std::fs::read_to_string(config_path)
@@ -54,7 +55,7 @@ pub static CONFIG: LazyLock<Option<SettingsState>> = LazyLock::new(|| {
 			eprintln!("Failed to read config: {error}");
 			None
 		});
-		
+
 		config
 	} else {
 		None
@@ -119,7 +120,7 @@ pub fn key_to_theme(key: &str) -> Theme {
 #[must_use]
 pub fn syntax_theme_to_key(theme: &highlighter::Theme) -> &str {
 	use highlighter::Theme;
-	
+
 	match theme {
 		Theme::SolarizedDark => "syntax.solarized.dark",
 		Theme::Base16Mocha => "syntax.base16.mocha",
@@ -132,7 +133,7 @@ pub fn syntax_theme_to_key(theme: &highlighter::Theme) -> &str {
 #[must_use]
 pub fn key_to_syntax_theme(key: &str) -> highlighter::Theme {
 	use highlighter::Theme;
-	
+
 	match key {
 		"syntax.solarized.dark" => Theme::SolarizedDark,
 		"syntax.base16.mocha" => Theme::Base16Mocha,
@@ -148,7 +149,7 @@ fn invoke_config_update(state: &Editor) {
 		syntax_theme: syntax_theme_to_key(&state.highlighter_theme).to_string()
 	};
 
-	let config_path = *CONFIG_PATH;
+	let config_path = &*CONFIG_PATH;
 
 	if std::fs::write(config_path, serde_json::to_string(&config).unwrap()).is_err() {
 		eprintln!("Failed to write config to file");
@@ -300,7 +301,7 @@ impl Application for Editor {
 		} else {
 			(Theme::Dark, highlighter::Theme::Base16Eighties)
 		};
-		
+
 		(
 			Self {
 				files: vec![File::sample()],
@@ -446,16 +447,16 @@ impl Application for Editor {
 			}
 			Message::SelectTheme(theme) => {
 				self.theme = theme;
-				
+
 				invoke_config_update(self);
 				
 				Command::none()
 			}
 			Message::SelectSyntaxTheme(theme) => {
 				self.highlighter_theme = theme;
-				
+
 				invoke_config_update(self);
-				
+
 				Command::none()
 			}
 			Message::None => Command::none(),
