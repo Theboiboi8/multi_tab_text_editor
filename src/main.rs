@@ -1,5 +1,6 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 #![warn(clippy::perf, clippy::pedantic)]
+#![deny(rust_2024_compatibility)]
 
 use std::io;
 use std::path::{Path, PathBuf};
