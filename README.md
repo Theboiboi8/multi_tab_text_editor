@@ -38,8 +38,8 @@ without any additional terms or conditions.
 This project uses the [JetBrains Mono](https://www.jetbrains.com/lp/mono/) font,
 created by [JetBrains s.r.o.](https://www.jetbrains.com)
 
-This project uses the [Uncut Sans](https://uncut.wtf/sans-serif/uncut-sans/) font,
-created by [UNCUT.wtf](https://uncut.wtf)
+This project uses the [Inter](https://rsms.me/inter/) font,
+created by [Rasmus Andersson](https://rsms.me/)
 
 This project uses the [Bootstrap Icons](https://icons.getbootstrap.com/) font,
 created by [Bootstrap](https://getbootstrap.com/)

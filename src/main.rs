@@ -4,7 +4,7 @@
 
 use std::io;
 use std::path::{Path, PathBuf};
-use std::sync::Arc;
+use std::sync::{Arc, LazyLock};
 
 use iced::{
 	Alignment, Application, Command, Element, executor, Font, highlighter, Length, Pixels, Settings,
@@ -20,8 +20,13 @@ use iced_aw::menu::{Item, Menu};
 
 mod editor;
 
-pub const UNCUT_SANS: Font = Font::with_name("UncutSans");
-pub const JETBRAINS_MONO: Font = Font::with_name("JetBrainsMono");
+pub static JETBRAINS_MONO: LazyLock<Font> = LazyLock::new(|| {
+	Font::with_name("JetBrains Mono")
+});
+
+pub static INTER: LazyLock<Font> = LazyLock::new(|| {
+	Font::with_name("Inter")
+});
 
 fn main() -> iced::Result {
 	Editor::run(Settings {
@@ -49,11 +54,11 @@ fn main() -> iced::Result {
 			include_bytes!("../assets/JetBrainsMono.ttf")
 				.as_slice()
 				.into(),
-			include_bytes!("../assets/UncutSans.ttf")
+			include_bytes!("../assets/Inter-Regular.ttf")
 				.as_slice()
 				.into(),
 		],
-		default_font: UNCUT_SANS,
+		default_font: *INTER,
 		default_text_size: Pixels(13.0),
 		antialiasing: true,
 	})
@@ -63,10 +68,12 @@ struct Editor {
 	files: Vec<File>,
 	current: usize,
 	error: Option<Error>,
-	theme: Theme,
 	modal_shown: bool,
 	modal_type: ModalType,
+	theme: Theme,
 	themes: State<Theme>,
+	highlighter_theme: highlighter::Theme,
+	highlighter_themes: State<highlighter::Theme>
 }
 
 struct File {
@@ -114,6 +121,7 @@ enum Message {
 	ShowModal(ModalType),
 	HideModal,
 	SelectTheme(Theme),
+	SelectSyntaxTheme(highlighter::Theme),
 	None,
 }
 
@@ -162,7 +170,9 @@ impl Application for Editor {
 				modal_shown: false,
 				modal_type: ModalType::About,
 				theme: Theme::GruvboxDark,
-				themes: State::new(THEMES.to_vec())
+				themes: State::new(THEMES.to_vec()),
+				highlighter_theme: highlighter::Theme::Base16Mocha,
+				highlighter_themes: State::new(highlighter::Theme::ALL.to_vec())
 			},
 			Command::none(),
 		)
@@ -297,6 +307,11 @@ impl Application for Editor {
 			}
 			Message::SelectTheme(theme) => {
 				self.theme = theme;
+				
+				Command::none()
+			}
+			Message::SelectSyntaxTheme(theme) => {
+				self.highlighter_theme = theme;
 				
 				Command::none()
 			}
@@ -435,11 +450,11 @@ impl Application for Editor {
 
 		let input = text_editor(&self.files[self.current].content)
 			.on_action(Message::Edit)
-			.font(JETBRAINS_MONO)
+			.font(*JETBRAINS_MONO)
 			.height(Length::Fill)
 			.highlight::<Highlighter>(
 				highlighter::Settings {
-					theme: highlighter::Theme::Base16Mocha,
+					theme: self.highlighter_theme,
 					extension: self.files[self.current]
 						.path
 						.as_ref()

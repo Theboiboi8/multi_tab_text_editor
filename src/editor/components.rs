@@ -201,8 +201,17 @@ pub fn settings_modal(state: &Editor) -> Element<Message> {
 				"Select a theme",
 				Some(&state.theme),
 				Message::SelectTheme
-			)).width(250)
+			))
 			.push(separator())
+			.push(text("Selected syntax highlighting theme"))
+			.push(ComboBox::new(
+				&state.highlighter_themes,
+				"Select a highlighting theme",
+				Some(&state.highlighter_theme),
+				Message::SelectSyntaxTheme
+			))
+			.push(separator())
+			.width(600)
 	)
 		.style(style::card::CardStyles::Secondary)
 		.width(640)
