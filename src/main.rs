@@ -2,44 +2,41 @@
 #![warn(clippy::perf, clippy::pedantic)]
 #![deny(rust_2024_compatibility)]
 
+use std::ffi::OsStr;
 use std::io;
 use std::path::{Path, PathBuf};
 use std::sync::{Arc, LazyLock};
 
-use iced::{
-	Alignment, Application, Command, Element, executor, Font, highlighter, Length, Pixels, Settings,
-	Size, Theme, window,
-};
 use iced::highlighter::Highlighter;
-use iced::widget::{Column, container, horizontal_space, row, Row, text, text_editor};
 use iced::widget::combo_box::State;
-use iced::window::{icon, Level, Position};
+use iced::widget::{container, horizontal_space, row, text, text_editor, Column, Row};
 use iced::window::settings::PlatformSpecific;
-use iced_aw::{menu, menu_bar, menu_items, Modal};
+use iced::window::{icon, Level, Position};
+use iced::{
+	executor, highlighter, window, Alignment, Application, Command, Element, Font, Length, Pixels,
+	Settings, Size, Theme,
+};
 use iced_aw::menu::{Item, Menu};
+use iced_aw::{menu, menu_bar, menu_items, Modal};
 use serde::{Deserialize, Serialize};
 
 mod editor;
 
-pub static JETBRAINS_MONO: LazyLock<Font> = LazyLock::new(|| {
-	Font::with_name("JetBrains Mono")
-});
+pub static JETBRAINS_MONO: LazyLock<Font> = LazyLock::new(|| Font::with_name("JetBrains Mono"));
 
-pub static INTER: LazyLock<Font> = LazyLock::new(|| {
-	Font::with_name("Inter")
-});
+pub static INTER: LazyLock<Font> = LazyLock::new(|| Font::with_name("Inter"));
 
 pub static CONFIG_PATH: LazyLock<PathBuf> = LazyLock::new(|| {
 	let config_path = dirs::config_dir().unwrap_or_default();
-	
+
 	let editor_config_dir = config_path.join("multi_tab_text_editor");
-	
+
 	let config_file_name = PathBuf::from("multi_tab_text_editor_config.json");
-	
+
 	if !editor_config_dir.exists() && std::fs::create_dir_all(&editor_config_dir).is_err() {
 		eprintln!("Failed to create config directory");
 	}
-	
+
 	editor_config_dir.join(config_file_name)
 });
 
@@ -47,14 +44,12 @@ pub static CONFIG: LazyLock<Option<SettingsState>> = LazyLock::new(|| {
 	let config_path = &*CONFIG_PATH;
 
 	if config_path.exists() {
-		let config: Option<SettingsState> = serde_json::from_str(
-			std::fs::read_to_string(config_path)
-				.unwrap()
-				.leak()
-		).unwrap_or_else(|error| {
-			eprintln!("Failed to read config: {error}");
-			None
-		});
+		let config: Option<SettingsState> =
+			serde_json::from_str(std::fs::read_to_string(config_path).unwrap().leak())
+				.unwrap_or_else(|error| {
+					eprintln!("Failed to read config: {error}");
+					None
+				});
 
 		config
 	} else {
@@ -86,7 +81,7 @@ pub fn theme_to_key(theme: &Theme) -> &str {
 		Theme::Moonfly => "theme.moonfly",
 		Theme::Nightfly => "theme.nightfly",
 		Theme::Oxocarbon => "theme.oxocarbon",
-		Theme::Custom(_) => "theme.unknown"
+		Theme::Custom(_) => "theme.unknown",
 	}
 }
 
@@ -113,7 +108,7 @@ pub fn key_to_theme(key: &str) -> Theme {
 		"theme.moonfly" => Theme::Moonfly,
 		"theme.nightfly" => Theme::Nightfly,
 		"theme.oxocarbon" => Theme::Oxocarbon,
-		_ => Theme::Light
+		_ => Theme::Light,
 	}
 }
 
@@ -126,7 +121,7 @@ pub fn syntax_theme_to_key(theme: &highlighter::Theme) -> &str {
 		Theme::Base16Mocha => "syntax.base16.mocha",
 		Theme::Base16Ocean => "syntax.base16.ocean",
 		Theme::Base16Eighties => "syntax.base16.eighties",
-		Theme::InspiredGitHub => "syntax.inspired-github"
+		Theme::InspiredGitHub => "syntax.inspired-github",
 	}
 }
 
@@ -139,14 +134,14 @@ pub fn key_to_syntax_theme(key: &str) -> highlighter::Theme {
 		"syntax.base16.mocha" => Theme::Base16Mocha,
 		"syntax.base16.ocean" => Theme::Base16Ocean,
 		"syntax.inspired-github" => Theme::InspiredGitHub,
-		_ => Theme::Base16Eighties
+		_ => Theme::Base16Eighties,
 	}
 }
 
 fn invoke_config_update(state: &Editor) {
 	let config = SettingsState {
 		theme: theme_to_key(&state.theme).to_string(),
-		syntax_theme: syntax_theme_to_key(&state.highlighter_theme).to_string()
+		syntax_theme: syntax_theme_to_key(&state.highlighter_theme).to_string(),
 	};
 
 	let config_path = &*CONFIG_PATH;
@@ -169,8 +164,7 @@ fn main() -> iced::Result {
 			decorations: true,
 			transparent: false,
 			level: Level::default(),
-			icon: Some(icon::from_file_data(include_bytes!("../assets/icon.png"), None)
-				.unwrap()),
+			icon: Some(icon::from_file_data(include_bytes!("../assets/icon.png"), None).unwrap()),
 			platform_specific: PlatformSpecific::default(),
 			exit_on_close_request: true,
 		},
@@ -201,7 +195,7 @@ struct Editor {
 	theme: Theme,
 	themes: State<Theme>,
 	highlighter_theme: highlighter::Theme,
-	highlighter_themes: State<highlighter::Theme>
+	highlighter_themes: State<highlighter::Theme>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -297,7 +291,10 @@ impl Application for Editor {
 
 	fn new(_flags: Self::Flags) -> (Self, Command<Message>) {
 		let (theme, syntax) = if let Some(config) = &*CONFIG {
-			(key_to_theme(&config.theme), key_to_syntax_theme(&config.syntax_theme))
+			(
+				key_to_theme(&config.theme),
+				key_to_syntax_theme(&config.syntax_theme),
+			)
 		} else {
 			(Theme::Dark, highlighter::Theme::Base16Eighties)
 		};
@@ -312,20 +309,47 @@ impl Application for Editor {
 				theme,
 				themes: State::new(THEMES.to_vec()),
 				highlighter_theme: syntax,
-				highlighter_themes: State::new(highlighter::Theme::ALL.to_vec())
+				highlighter_themes: State::new(highlighter::Theme::ALL.to_vec()),
 			},
 			Command::none(),
 		)
 	}
 
 	fn title(&self) -> String {
-		format!("{} v{}", env!("CARGO_PKG_NAME"), env!("CARGO_PKG_VERSION"))
+		format!(
+			"Multi Tab Text Editor | {}",
+			match &self.files[self.current].path {
+				None => format!(
+					"New File{}",
+					if self.files[self.current].is_modified {
+						"*"
+					} else {
+						""
+					}
+				),
+				Some(path) => {
+					let mut name = path.file_name()
+						.unwrap_or(OsStr::new(""))
+						.to_str()
+						.unwrap_or("")
+						.to_string();
+					
+					if self.files[self.current].is_modified {
+						name.push('*');
+					}
+					
+					name
+				}
+			}
+		)
 	}
 
 	#[allow(clippy::too_many_lines)]
 	fn update(&mut self, message: Message) -> Command<Message> {
 		match message {
 			Message::Edit(action) => {
+				assert!(self.current < self.files.len());
+				
 				self.files[self.current].is_modified =
 					self.files[self.current].is_modified || action.is_edit();
 				self.error = None;
@@ -336,6 +360,8 @@ impl Application for Editor {
 			}
 			Message::Open => Command::perform(pick_file(), Message::FileOpened),
 			Message::FileOpened(Ok((path, content))) => {
+				assert!(self.current < self.files.len());
+
 				self.files.push(File::empty());
 
 				self.current = self.files.len() - 1;
@@ -358,6 +384,8 @@ impl Application for Editor {
 				Command::none()
 			}
 			Message::Save => {
+				assert!(self.current < self.files.len());
+
 				let text = self.files[self.current].content.text();
 
 				Command::perform(
@@ -366,17 +394,23 @@ impl Application for Editor {
 				)
 			}
 			Message::SaveAs => {
+				assert!(self.current < self.files.len());
+
 				let text = self.files[self.current].content.text();
 
 				Command::perform(save_file(None, text), Message::FileSaved)
 			}
 			Message::FileSaved(Ok(path)) => {
+				assert!(self.current < self.files.len());
+
 				self.files[self.current].path = Some(path);
 				self.files[self.current].is_modified = false;
 
 				Command::none()
 			}
 			Message::Close => {
+				assert!(self.current < self.files.len());
+
 				let mut should_remove = true;
 				let remove: usize = self.current;
 
@@ -397,6 +431,8 @@ impl Application for Editor {
 				Command::none()
 			}
 			Message::CloseIndex(index) => {
+				assert!(self.current < self.files.len());
+
 				let mut should_remove = true;
 
 				if self.current != index {
@@ -449,7 +485,7 @@ impl Application for Editor {
 				self.theme = theme;
 
 				invoke_config_update(self);
-				
+
 				Command::none()
 			}
 			Message::SelectSyntaxTheme(theme) => {
@@ -528,13 +564,13 @@ impl Application for Editor {
                         Message::Close
                     )
                 )(
-	                editor::components::separator(&self.theme)
+                    editor::components::separator(&self.theme)
                 )(
-	                editor::components::menu_button(
-		                row![editor::icons::settings_icon(12), text("   Settings"),]
-		                    .align_items(Alignment::Center),
-		                Message::ShowModal(ModalType::Settings)
-	                )
+                    editor::components::menu_button(
+                        row![editor::icons::settings_icon(12), text("   Settings"),]
+                            .align_items(Alignment::Center),
+                        Message::ShowModal(ModalType::Settings)
+                    )
                 )])
                 .width(180.0);
 
@@ -574,9 +610,7 @@ impl Application for Editor {
 						Some(path) => {
 							match path.file_name() {
 								None => "Error",
-								Some(file_name) => file_name
-									.to_str()
-									.unwrap_or("Error"),
+								Some(file_name) => file_name.to_str().unwrap_or("Error"),
 							}
 						}
 					},
@@ -639,8 +673,9 @@ impl Application for Editor {
 					.push(tabs)
 					.push(input)
 					.push(status_bar)
-					.spacing(10)
-			).padding(10),
+					.spacing(10),
+			)
+				.padding(10),
 			card,
 		)
 			.into()
@@ -658,10 +693,10 @@ async fn pick_file() -> Result<(PathBuf, Arc<String>), Error> {
 		.await
 		.ok_or(Error::DialogClosed)?;
 
-	load_file(handle.path().to_owned()).await
+	load_file(handle.path()).await
 }
 
-async fn load_file(path: PathBuf) -> Result<(PathBuf, Arc<String>), Error> {
+async fn load_file(path: &Path) -> Result<(PathBuf, Arc<String>), Error> {
 	let contents = tokio::fs::read_to_string(&path)
 		.await
 		.map(verify_content)
@@ -669,7 +704,7 @@ async fn load_file(path: PathBuf) -> Result<(PathBuf, Arc<String>), Error> {
 		.map_err(|error| error.kind())
 		.map_err(Error::IOFailed)?;
 
-	Ok((path, contents))
+	Ok((PathBuf::from(path), contents))
 }
 
 async fn save_file(path: Option<PathBuf>, text: String) -> Result<PathBuf, Error> {
@@ -704,3 +739,4 @@ fn verify_content(string: String) -> String {
 		.replace("\r\n", "\n")
 		.replace('\r', "\n")
 }
+
