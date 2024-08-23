@@ -1,6 +1,6 @@
 <div align="center">
 
-<img align="center" width="180" src="assets/icon.svg">
+<img align="center" width="180" src="assets/icon.svg" alt="The Multi Tab Text Editor icon">
 
 # Multi-Tab Text Editor
 
@@ -11,10 +11,10 @@
 ## Usage:
 
 To get started with the latest stable release,
-a stable Rust toolchain instalation is required.
-The latest stable release is guaranteed to compile,
-however older toolchain versions may still work,
-though they have not been tested.
+a stable Rust toolchain installation is required.
+The latest stable release is guaranteed to compile;
+older toolchain versions may still work,
+though they aren't actively tested.
 
 ```shell
 # Clone the stable branch
@@ -38,7 +38,7 @@ or the [MIT license](LICENSE-MIT) at your option.
 
 Unless explicitly stated otherwise, any contribution intentionally
 submitted for inclusion in the work by you, as defined in the [Apache-2.0
-license](LICENSE-APACHE), shall be dual-licensed as above,
+license](LICENSE-APACHE), will be dual-licensed as above,
 without any additional terms or conditions.
 
 ## Acknowledgements
