@@ -18,7 +18,7 @@ though they aren't actively tested.
 
 ```shell
 # Clone the stable branch
-git clone -b stable https://github.com/theboiboi8/multi_tab_text_editor.git
+git clone -b master https://github.com/theboiboi8/multi_tab_text_editor.git
 
 # Change working directory to the repo directory
 cd multi_tab_text_editor
