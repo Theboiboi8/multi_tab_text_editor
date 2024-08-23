@@ -1,6 +1,6 @@
 <div align="center">
 
-<img align="center" width="180" src="assets/icon.svg">
+<img align="center" width="180" src="assets/icon.svg" alt="The Multi Tab Text Editor icon">
 
 # Multi-Tab Text Editor
 
@@ -10,16 +10,19 @@
 
 ## Usage:
 
-To get started, a stable Rust toolchain instalation is required.
-The latest stable release is guaranteed to compile,
-however older toolchain versions may still work,
-though they have not been tested.
+To get started with the latest stable release,
+a stable Rust toolchain installation is required.
+The latest stable release is guaranteed to compile;
+older toolchain versions may still work,
+though they aren't actively tested.
 
 ```shell
-# Clone the git repo
-git clone https://github.com/theboiboi8/multi_tab_text_editor.git
+# Clone the stable branch
+git clone -b master https://github.com/theboiboi8/multi_tab_text_editor.git
+
 # Change working directory to the repo directory
 cd multi_tab_text_editor
+
 # Build the project
 cargo build --release
 ```
@@ -35,7 +38,7 @@ or the [MIT license](LICENSE-MIT) at your option.
 
 Unless explicitly stated otherwise, any contribution intentionally
 submitted for inclusion in the work by you, as defined in the [Apache-2.0
-license](LICENSE-APACHE), shall be dual-licensed as above,
+license](LICENSE-APACHE), will be dual-licensed as above,
 without any additional terms or conditions.
 
 ## Acknowledgements
