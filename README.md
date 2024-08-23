@@ -1,14 +1,19 @@
 <div align="center">
 
-![Multi-Tab Text Editor Icon](assets/icon.svg)
-
-</div>
+<img align="center" width="180" src="assets/icon.svg">
 
 # Multi-Tab Text Editor
 
-A text editor that supports syntax highlighting and multiple files open at once.
+<subtitle>A text editor that supports syntax highlighting and multiple files open at once.</subtitle>
+
+</div>
 
 ## Usage:
+
+To get started, a stable Rust toolchain instalation is required.
+The latest stable release is guaranteed to compile,
+however older toolchain versions may still work,
+though they have not been tested.
 
 ```shell
 # Clone the git repo
