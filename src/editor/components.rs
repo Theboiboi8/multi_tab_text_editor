@@ -1,22 +1,22 @@
-use iced::{Alignment, Background, Border, Color, Element, Length, Theme, theme};
+use iced::{Alignment, Background, Border, Element, Length, Theme, theme};
 use iced::alignment::Horizontal;
 use iced::theme::Button;
-use iced::widget::{button, container, row, tooltip, column as iced_column, text};
+use iced::widget::{button, Column, ComboBox, container, row, text, tooltip};
 use iced::widget::button::Appearance;
 use iced_aw::{card, quad, style};
 use iced_aw::widgets::InnerBounds;
 
+use crate::{Editor, Message};
 use crate::editor::icons;
-use crate::Message;
 
-pub fn separator() -> quad::Quad {
+pub fn separator(theme: &Theme) -> quad::Quad {
 	quad::Quad {
-		quad_color: Color::from([0.5; 3]).into(),
+		quad_color: theme.extended_palette().primary.weak.color.into(),
 		quad_border: Border {
 			radius: [4.0; 4].into(),
 			..Default::default()
 		},
-		inner_bounds: InnerBounds::Ratio(0.98, 0.2),
+		inner_bounds: InnerBounds::Ratio(0.99, 0.1),
 		height: Length::Fixed(20.0),
 		..Default::default()
 	}
@@ -149,36 +149,71 @@ pub fn tab(
 		.into()
 }
 
-pub fn about_modal<'a>() -> Element<'a, Message> {
+pub fn about_modal<'a>(theme: &Theme) -> Element<'a, Message> {
 	card(
 		row![
-						text("About")
-							.width(Length::Fill)
-							.size(24),
-						button(icons::close_icon(16))
-							.style(Button::Custom(Box::new(MenuButtonStyle)))
-							.width(Length::Shrink)
-							.on_press(Message::HideModal)
-					].align_items(Alignment::Center),
-		iced_column![
-						text("Multi Tab Text Editor"),
-						text("A text editor that supports syntax \
-						highlighting and multiple files open at once."),
-						separator(),
-						text("Created by Theboiboi8"),
-						text("Build using Rust"),
-						separator(),
-						row![
-							text("Source code is available on GitHub "),
-							button(row!["here", icons::external_icon(13)].align_items(Alignment::Center))
-								.style(Button::Text)
-								.padding(0)
-								.height(Length::Shrink)
-								.on_press(Message::OpenURL("https://github.com/Theboiboi8/multi_tab_text_editor"))
-						]
-					]
+			text("About")
+				.width(Length::Fill)
+				.size(24),
+			button(icons::close_icon(16))
+				.style(Button::Custom(Box::new(MenuButtonStyle)))
+				.width(Length::Shrink)
+				.on_press(Message::HideModal)
+		].align_items(Alignment::Center),
+		Column::new()
+			.push(text("Multi Tab Text Editor"))
+			.push(text("A text editor that supports syntax \
+			highlighting and multiple files open at once."))
+			.push(separator(theme))
+			.push(text("Created by Theboiboi8"))
+			.push(text("Build using Rust"))
+			.push(separator(theme))
+			.push(row![
+				text("Source code is available on GitHub "),
+				button(row!["here", icons::external_icon(13)].align_items(Alignment::Center))
+					.style(Button::Text)
+					.padding(0)
+					.height(Length::Shrink)
+					.on_press(Message::OpenURL("https://github.com/Theboiboi8/multi_tab_text_editor"))
+			])
 	)
-		.style(style::card::CardStyles::Secondary)
+		.style(style::card::CardStyles::Dark)
+		.width(640)
+		.height(360)
+		.into()
+}
+
+pub fn settings_modal(state: &Editor) -> Element<Message> {
+	card(
+		row![
+			text("Settings")
+				.width(Length::Fill)
+				.size(24),
+			button(icons::close_icon(16))
+				.style(Button::Custom(Box::new(MenuButtonStyle)))
+				.width(Length::Shrink)
+				.on_press(Message::HideModal)
+		].align_items(Alignment::Center),
+		Column::new()
+			.push(text("Selected theme"))
+			.push(ComboBox::new(
+				&state.themes,
+				"Select a theme",
+				Some(&state.theme),
+				Message::SelectTheme
+			))
+			.push(separator(&state.theme))
+			.push(text("Selected syntax highlighting theme"))
+			.push(ComboBox::new(
+				&state.highlighter_themes,
+				"Select a highlighting theme",
+				Some(&state.highlighter_theme),
+				Message::SelectSyntaxTheme
+			))
+			.push(separator(&state.theme))
+			.width(600)
+	)
+		.style(style::card::CardStyles::Dark)
 		.width(640)
 		.height(360)
 		.into()

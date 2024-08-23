@@ -1,27 +1,155 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 #![warn(clippy::perf, clippy::pedantic)]
+#![deny(rust_2024_compatibility)]
 
+use std::ffi::OsStr;
 use std::io;
 use std::path::{Path, PathBuf};
-use std::sync::Arc;
+use std::sync::{Arc, LazyLock};
 
-use iced::{
-	Alignment, Application, Command, Element, executor, Font, highlighter, Length, Pixels, Settings,
-	Size, Theme, window,
-};
 use iced::highlighter::Highlighter;
-use iced::widget::{
-	column as iced_column, container, horizontal_space, row, Row, text, text_editor,
-};
-use iced::window::{icon, Level, Position};
+use iced::widget::combo_box::State;
+use iced::widget::{container, horizontal_space, row, text, text_editor, Column, Row};
 use iced::window::settings::PlatformSpecific;
-use iced_aw::{menu, menu_bar, menu_items, Modal};
+use iced::window::{icon, Level, Position};
+use iced::{
+	executor, highlighter, window, Alignment, Application, Command, Element, Font, Length, Pixels,
+	Settings, Size, Theme,
+};
 use iced_aw::menu::{Item, Menu};
+use iced_aw::{menu, menu_bar, menu_items, Modal};
+use serde::{Deserialize, Serialize};
 
 mod editor;
 
-pub const UNCUT_SANS: Font = Font::with_name("UncutSans");
-pub const JETBRAINS_MONO: Font = Font::with_name("JetBrainsMono");
+pub static JETBRAINS_MONO: LazyLock<Font> = LazyLock::new(|| Font::with_name("JetBrains Mono"));
+
+pub static INTER: LazyLock<Font> = LazyLock::new(|| Font::with_name("Inter"));
+
+pub static CONFIG_PATH: LazyLock<PathBuf> = LazyLock::new(|| {
+	let config_path = dirs::config_dir().unwrap_or_default();
+
+	let editor_config_dir = config_path.join("multi_tab_text_editor");
+
+	let config_file_name = PathBuf::from("multi_tab_text_editor_config.json");
+
+	if !editor_config_dir.exists() && std::fs::create_dir_all(&editor_config_dir).is_err() {
+		eprintln!("Failed to create config directory");
+	}
+
+	editor_config_dir.join(config_file_name)
+});
+
+pub static CONFIG: LazyLock<Option<SettingsState>> = LazyLock::new(|| {
+	let config_path = &*CONFIG_PATH;
+
+	if config_path.exists() {
+		let config: Option<SettingsState> =
+			serde_json::from_str(std::fs::read_to_string(config_path).unwrap().leak())
+				.unwrap_or_else(|error| {
+					eprintln!("Failed to read config: {error}");
+					None
+				});
+
+		config
+	} else {
+		None
+	}
+});
+
+#[must_use]
+pub fn theme_to_key(theme: &Theme) -> &str {
+	match theme {
+		Theme::Light => "theme.light",
+		Theme::Dark => "theme.dark",
+		Theme::Dracula => "theme.dracula",
+		Theme::Nord => "theme.nord",
+		Theme::SolarizedLight => "theme.solarized.light",
+		Theme::SolarizedDark => "theme.solarized.dark",
+		Theme::GruvboxLight => "theme.gruvbox.light",
+		Theme::GruvboxDark => "theme.gruvbox.dark",
+		Theme::CatppuccinLatte => "theme.catppuccin.latte",
+		Theme::CatppuccinFrappe => "theme.catppuccin.frappe",
+		Theme::CatppuccinMacchiato => "theme.catppuccin.macchiato",
+		Theme::CatppuccinMocha => "theme.catppuccin.mocha",
+		Theme::TokyoNight => "theme.tokionight",
+		Theme::TokyoNightStorm => "theme.tokionight.storm",
+		Theme::TokyoNightLight => "theme.tokyonight.light",
+		Theme::KanagawaWave => "theme.kanagawa.wave",
+		Theme::KanagawaDragon => "theme.kanagawa.dragon",
+		Theme::KanagawaLotus => "theme.kanagawa.lotus",
+		Theme::Moonfly => "theme.moonfly",
+		Theme::Nightfly => "theme.nightfly",
+		Theme::Oxocarbon => "theme.oxocarbon",
+		Theme::Custom(_) => "theme.unknown",
+	}
+}
+
+#[must_use]
+pub fn key_to_theme(key: &str) -> Theme {
+	match key {
+		"theme.dark" => Theme::Dark,
+		"theme.dracula" => Theme::Dracula,
+		"theme.nord" => Theme::Nord,
+		"theme.solarized.light" => Theme::SolarizedLight,
+		"theme.solarized.dark" => Theme::SolarizedDark,
+		"theme.gruvbox.light" => Theme::GruvboxLight,
+		"theme.gruvbox.dark" => Theme::GruvboxDark,
+		"theme.catppuccin.latte" => Theme::CatppuccinLatte,
+		"theme.catppuccin.frappe" => Theme::CatppuccinFrappe,
+		"theme.catppuccin.macchiato" => Theme::CatppuccinMacchiato,
+		"theme.catppuccin.mocha" => Theme::CatppuccinMocha,
+		"theme.tokyonight" => Theme::TokyoNight,
+		"theme.tokyonight.storm" => Theme::TokyoNightStorm,
+		"theme.tokyonight.light" => Theme::TokyoNightLight,
+		"theme.kanagawa.wave" => Theme::KanagawaWave,
+		"theme.kanagawa.dragon" => Theme::KanagawaDragon,
+		"theme.kanagawa.lotus" => Theme::KanagawaLotus,
+		"theme.moonfly" => Theme::Moonfly,
+		"theme.nightfly" => Theme::Nightfly,
+		"theme.oxocarbon" => Theme::Oxocarbon,
+		_ => Theme::Light,
+	}
+}
+
+#[must_use]
+pub fn syntax_theme_to_key(theme: &highlighter::Theme) -> &str {
+	use highlighter::Theme;
+
+	match theme {
+		Theme::SolarizedDark => "syntax.solarized.dark",
+		Theme::Base16Mocha => "syntax.base16.mocha",
+		Theme::Base16Ocean => "syntax.base16.ocean",
+		Theme::Base16Eighties => "syntax.base16.eighties",
+		Theme::InspiredGitHub => "syntax.inspired-github",
+	}
+}
+
+#[must_use]
+pub fn key_to_syntax_theme(key: &str) -> highlighter::Theme {
+	use highlighter::Theme;
+
+	match key {
+		"syntax.solarized.dark" => Theme::SolarizedDark,
+		"syntax.base16.mocha" => Theme::Base16Mocha,
+		"syntax.base16.ocean" => Theme::Base16Ocean,
+		"syntax.inspired-github" => Theme::InspiredGitHub,
+		_ => Theme::Base16Eighties,
+	}
+}
+
+fn invoke_config_update(state: &Editor) {
+	let config = SettingsState {
+		theme: theme_to_key(&state.theme).to_string(),
+		syntax_theme: syntax_theme_to_key(&state.highlighter_theme).to_string(),
+	};
+
+	let config_path = &*CONFIG_PATH;
+
+	if std::fs::write(config_path, serde_json::to_string(&config).unwrap()).is_err() {
+		eprintln!("Failed to write config to file");
+	}
+}
 
 fn main() -> iced::Result {
 	Editor::run(Settings {
@@ -36,8 +164,7 @@ fn main() -> iced::Result {
 			decorations: true,
 			transparent: false,
 			level: Level::default(),
-			icon: Some(icon::from_file_data(include_bytes!("../assets/icon.png"), None)
-				.unwrap()),
+			icon: Some(icon::from_file_data(include_bytes!("../assets/icon.png"), None).unwrap()),
 			platform_specific: PlatformSpecific::default(),
 			exit_on_close_request: true,
 		},
@@ -49,9 +176,11 @@ fn main() -> iced::Result {
 			include_bytes!("../assets/JetBrainsMono.ttf")
 				.as_slice()
 				.into(),
-			include_bytes!("../assets/UncutSans.ttf").as_slice().into(),
+			include_bytes!("../assets/Inter-Regular.ttf")
+				.as_slice()
+				.into(),
 		],
-		default_font: UNCUT_SANS,
+		default_font: *INTER,
 		default_text_size: Pixels(13.0),
 		antialiasing: true,
 	})
@@ -61,12 +190,21 @@ struct Editor {
 	files: Vec<File>,
 	current: usize,
 	error: Option<Error>,
-	theme: Theme,
 	modal_shown: bool,
 	modal_type: ModalType,
+	theme: Theme,
+	themes: State<Theme>,
+	highlighter_theme: highlighter::Theme,
+	highlighter_themes: State<highlighter::Theme>,
 }
 
-struct File {
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct SettingsState {
+	theme: String,
+	syntax_theme: String,
+}
+
+pub struct File {
 	path: Option<PathBuf>,
 	content: text_editor::Content,
 	is_modified: bool,
@@ -110,13 +248,40 @@ enum Message {
 	ShowInExplorer(PathBuf),
 	ShowModal(ModalType),
 	HideModal,
+	SelectTheme(Theme),
+	SelectSyntaxTheme(highlighter::Theme),
 	None,
 }
 
 #[derive(Debug, Clone)]
 enum ModalType {
 	About,
+	Settings,
 }
+
+pub const THEMES: [Theme; 21] = [
+	Theme::Light,
+	Theme::Dark,
+	Theme::Dracula,
+	Theme::Nord,
+	Theme::SolarizedLight,
+	Theme::SolarizedDark,
+	Theme::GruvboxLight,
+	Theme::GruvboxDark,
+	Theme::CatppuccinLatte,
+	Theme::CatppuccinFrappe,
+	Theme::CatppuccinMacchiato,
+	Theme::CatppuccinMocha,
+	Theme::TokyoNight,
+	Theme::TokyoNightStorm,
+	Theme::TokyoNightLight,
+	Theme::KanagawaWave,
+	Theme::KanagawaDragon,
+	Theme::KanagawaLotus,
+	Theme::Moonfly,
+	Theme::Nightfly,
+	Theme::Oxocarbon,
+];
 
 impl Application for Editor {
 	type Executor = executor::Default;
@@ -125,6 +290,15 @@ impl Application for Editor {
 	type Flags = ();
 
 	fn new(_flags: Self::Flags) -> (Self, Command<Message>) {
+		let (theme, syntax) = if let Some(config) = &*CONFIG {
+			(
+				key_to_theme(&config.theme),
+				key_to_syntax_theme(&config.syntax_theme),
+			)
+		} else {
+			(Theme::Dark, highlighter::Theme::Base16Eighties)
+		};
+
 		(
 			Self {
 				files: vec![File::sample()],
@@ -132,20 +306,50 @@ impl Application for Editor {
 				current: 0,
 				modal_shown: false,
 				modal_type: ModalType::About,
-				theme: Theme::GruvboxDark,
+				theme,
+				themes: State::new(THEMES.to_vec()),
+				highlighter_theme: syntax,
+				highlighter_themes: State::new(highlighter::Theme::ALL.to_vec()),
 			},
 			Command::none(),
 		)
 	}
 
 	fn title(&self) -> String {
-		format!("{} v{}", env!("CARGO_PKG_NAME"), env!("CARGO_PKG_VERSION"))
+		format!(
+			"Multi Tab Text Editor | {}",
+			match &self.files[self.current].path {
+				None => format!(
+					"New File{}",
+					if self.files[self.current].is_modified {
+						"*"
+					} else {
+						""
+					}
+				),
+				Some(path) => {
+					let mut name = path.file_name()
+						.unwrap_or(OsStr::new(""))
+						.to_str()
+						.unwrap_or("")
+						.to_string();
+					
+					if self.files[self.current].is_modified {
+						name.push('*');
+					}
+					
+					name
+				}
+			}
+		)
 	}
 
 	#[allow(clippy::too_many_lines)]
 	fn update(&mut self, message: Message) -> Command<Message> {
 		match message {
 			Message::Edit(action) => {
+				assert!(self.current < self.files.len());
+				
 				self.files[self.current].is_modified =
 					self.files[self.current].is_modified || action.is_edit();
 				self.error = None;
@@ -156,6 +360,8 @@ impl Application for Editor {
 			}
 			Message::Open => Command::perform(pick_file(), Message::FileOpened),
 			Message::FileOpened(Ok((path, content))) => {
+				assert!(self.current < self.files.len());
+
 				self.files.push(File::empty());
 
 				self.current = self.files.len() - 1;
@@ -178,6 +384,8 @@ impl Application for Editor {
 				Command::none()
 			}
 			Message::Save => {
+				assert!(self.current < self.files.len());
+
 				let text = self.files[self.current].content.text();
 
 				Command::perform(
@@ -186,17 +394,23 @@ impl Application for Editor {
 				)
 			}
 			Message::SaveAs => {
+				assert!(self.current < self.files.len());
+
 				let text = self.files[self.current].content.text();
 
 				Command::perform(save_file(None, text), Message::FileSaved)
 			}
 			Message::FileSaved(Ok(path)) => {
+				assert!(self.current < self.files.len());
+
 				self.files[self.current].path = Some(path);
 				self.files[self.current].is_modified = false;
 
 				Command::none()
 			}
 			Message::Close => {
+				assert!(self.current < self.files.len());
+
 				let mut should_remove = true;
 				let remove: usize = self.current;
 
@@ -217,6 +431,8 @@ impl Application for Editor {
 				Command::none()
 			}
 			Message::CloseIndex(index) => {
+				assert!(self.current < self.files.len());
+
 				let mut should_remove = true;
 
 				if self.current != index {
@@ -265,6 +481,20 @@ impl Application for Editor {
 
 				Command::none()
 			}
+			Message::SelectTheme(theme) => {
+				self.theme = theme;
+
+				invoke_config_update(self);
+
+				Command::none()
+			}
+			Message::SelectSyntaxTheme(theme) => {
+				self.highlighter_theme = theme;
+
+				invoke_config_update(self);
+
+				Command::none()
+			}
 			Message::None => Command::none(),
 		}
 	}
@@ -273,7 +503,8 @@ impl Application for Editor {
 	fn view(&self) -> Element<'_, Self::Message> {
 		let card = if self.modal_shown {
 			Some(match self.modal_type {
-				ModalType::About => editor::components::about_modal(),
+				ModalType::About => editor::components::about_modal(&self.theme),
+				ModalType::Settings => editor::components::settings_modal(self),
 			})
 		} else {
 			None
@@ -332,6 +563,14 @@ impl Application for Editor {
                             .align_items(Alignment::Center),
                         Message::Close
                     )
+                )(
+                    editor::components::separator(&self.theme)
+                )(
+                    editor::components::menu_button(
+                        row![editor::icons::settings_icon(12), text("   Settings"),]
+                            .align_items(Alignment::Center),
+                        Message::ShowModal(ModalType::Settings)
+                    )
                 )])
                 .width(180.0);
 
@@ -371,9 +610,7 @@ impl Application for Editor {
 						Some(path) => {
 							match path.file_name() {
 								None => "Error",
-								Some(file_name) => file_name
-									.to_str()
-									.unwrap_or("Error"),
+								Some(file_name) => file_name.to_str().unwrap_or("Error"),
 							}
 						}
 					},
@@ -391,11 +628,11 @@ impl Application for Editor {
 
 		let input = text_editor(&self.files[self.current].content)
 			.on_action(Message::Edit)
-			.font(JETBRAINS_MONO)
+			.font(*JETBRAINS_MONO)
 			.height(Length::Fill)
 			.highlight::<Highlighter>(
 				highlighter::Settings {
-					theme: highlighter::Theme::Base16Mocha,
+					theme: self.highlighter_theme,
 					extension: self.files[self.current]
 						.path
 						.as_ref()
@@ -430,7 +667,15 @@ impl Application for Editor {
 		};
 
 		Modal::new(
-			container(iced_column![menu_bar, tabs, input, status_bar].spacing(10)).padding(10),
+			container(
+				Column::new()
+					.push(menu_bar)
+					.push(tabs)
+					.push(input)
+					.push(status_bar)
+					.spacing(10),
+			)
+				.padding(10),
 			card,
 		)
 			.into()
@@ -448,10 +693,10 @@ async fn pick_file() -> Result<(PathBuf, Arc<String>), Error> {
 		.await
 		.ok_or(Error::DialogClosed)?;
 
-	load_file(handle.path().to_owned()).await
+	load_file(handle.path()).await
 }
 
-async fn load_file(path: PathBuf) -> Result<(PathBuf, Arc<String>), Error> {
+async fn load_file(path: &Path) -> Result<(PathBuf, Arc<String>), Error> {
 	let contents = tokio::fs::read_to_string(&path)
 		.await
 		.map(verify_content)
@@ -459,7 +704,7 @@ async fn load_file(path: PathBuf) -> Result<(PathBuf, Arc<String>), Error> {
 		.map_err(|error| error.kind())
 		.map_err(Error::IOFailed)?;
 
-	Ok((path, contents))
+	Ok((PathBuf::from(path), contents))
 }
 
 async fn save_file(path: Option<PathBuf>, text: String) -> Result<PathBuf, Error> {
@@ -494,3 +739,4 @@ fn verify_content(string: String) -> String {
 		.replace("\r\n", "\n")
 		.replace('\r', "\n")
 }
+
