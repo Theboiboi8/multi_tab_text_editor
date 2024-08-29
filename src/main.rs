@@ -377,10 +377,12 @@ impl Application for Editor {
 
 	#[allow(clippy::too_many_lines)]
 	fn view(&self) -> Element<'_, Self::Message> {
+		use editor::components;
+		
 		let card = if self.modal_shown {
 			Some(match self.modal_type {
-				ModalType::About => editor::components::about_modal(&self.theme),
-				ModalType::Settings => editor::components::settings_modal(self),
+				ModalType::About => components::about_modal(&self.theme),
+				ModalType::Settings => components::settings_modal(self),
 			})
 		} else {
 			None
@@ -396,54 +398,54 @@ impl Application for Editor {
 			.spacing(5.0);
 
 		let menu_bar = menu_bar![(
-            editor::components::menubar_button(text("File"), None, Message::None),
+            components::menubar_button(text("File"), None, Message::None),
             {
-                let sub_menu = menu_tpl_2(menu_items![(editor::components::menu_button(
-                    row![editor::icons::new_icon(12), text("   New"),]
+                let sub_menu = menu_tpl_2(menu_items![(components::menu_button(
+                    row![editor::icons::new_icon(12), components::icon_text("New"),]
                         .align_items(Alignment::Center),
                     Message::New
                 ))(
-                    editor::components::menu_button(
-                        row![editor::icons::open_icon(12), text("   Open..."),]
+                    components::menu_button(
+                        row![editor::icons::open_icon(12), components::icon_text("Open a file"),]
                             .align_items(Alignment::Center),
                         Message::Open
                     )
                 )(
-                    editor::components::menu_button(
-                        row![editor::icons::save_icon(12), text("   Save"),]
+                    components::menu_button(
+                        row![editor::icons::save_icon(12), components::icon_text("Save"),]
                             .align_items(Alignment::Center),
                         Message::Save
                     )
                 )(
-                    editor::components::menu_button(
-                        row![editor::icons::save_as_icon(12), text("   Save As"),]
+                    components::menu_button(
+                        row![editor::icons::save_as_icon(12), components::icon_text("Save As"),]
                             .align_items(Alignment::Center),
                         Message::SaveAs
                     )
                 )(
                     if let Some(path) = self.files[self.current].path.clone() {
-                        editor::components::menu_button(
-                            row![editor::icons::eye_icon(12), text("   Show in Explorer"),]
+                        components::menu_button(
+                            row![editor::icons::eye_icon(12), components::icon_text("Show in Explorer"),]
                                 .align_items(Alignment::Center),
                             Message::ShowInExplorer(path),
                         )
                     } else {
-                        editor::components::menu_button_disabled(
-                            row![editor::icons::eye_icon(12), text("   Show in Explorer"),]
+                        components::menu_button_disabled(
+                            row![editor::icons::eye_icon(12), components::icon_text("Show in Explorer"),]
                                 .align_items(Alignment::Center),
                         )
                     }
                 )(
-                    editor::components::menu_button(
-                        row![editor::icons::close_icon(12), text("   Close"),]
+                    components::menu_button(
+                        row![editor::icons::close_icon(12), components::icon_text("Close"),]
                             .align_items(Alignment::Center),
                         Message::Close
                     )
                 )(
-                    editor::components::separator(&self.theme)
+                    components::separator(&self.theme)
                 )(
-                    editor::components::menu_button(
-                        row![editor::icons::settings_icon(12), text("   Settings"),]
+                    components::menu_button(
+                        row![editor::icons::settings_icon(12), components::icon_text("Settings"),]
                             .align_items(Alignment::Center),
                         Message::ShowModal(ModalType::Settings)
                     )
@@ -453,14 +455,14 @@ impl Application for Editor {
                 sub_menu
             }
         )(
-            editor::components::menubar_button(text("Help"), None, Message::None),
+            components::menubar_button(text("Help"), None, Message::None),
             {
-                let sub_menu = menu_tpl_2(menu_items![(editor::components::menu_button(
+                let sub_menu = menu_tpl_2(menu_items![(components::menu_button(
                     row![editor::icons::info_icon(12), text("   About"),]
                         .align_items(Alignment::Center),
                     Message::ShowModal(ModalType::About)
                 ))(
-                    editor::components::menu_button(
+                    components::menu_button(
                         row![editor::icons::git_icon(12), text("   Source"),]
                             .align_items(Alignment::Center),
                         Message::OpenURL("https://github.com/Theboiboi8/multi_tab_text_editor")
@@ -476,7 +478,7 @@ impl Application for Editor {
 		let mut tabs = Vec::new();
 
 		for (index, file) in self.files.iter().enumerate() {
-			tabs.push(editor::components::tab(
+			tabs.push(components::tab(
 				text(format!(
 					"{}{}",
 					match &file.path {
@@ -615,4 +617,3 @@ fn verify_content(string: String) -> String {
 		.replace("\r\n", "\n")
 		.replace('\r', "\n")
 }
-

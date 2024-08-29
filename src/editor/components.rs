@@ -149,6 +149,10 @@ pub fn tab(
 		.into()
 }
 
+pub fn icon_text<'a>(label: &(impl ToString + ?Sized)) -> Element<'a, Message> {
+	text(format!("   {}", label.to_string())).into()
+}
+
 pub fn about_modal<'a>(theme: &Theme) -> Element<'a, Message> {
 	card(
 		row![
