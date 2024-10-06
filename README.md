@@ -31,8 +31,8 @@ Afterward, the text editor executable can be found under `target/release`
 
 ## Licensing
 
-Dual-licensed under either the [Apache License, Version 2.0](LICENSE-APACHE)
-or the [MIT license](LICENSE-MIT) at your option.
+Dual-licensed under both the [Apache License, Version 2.0](LICENSE-APACHE)
+and the [MIT license](LICENSE-MIT).
 
 ## Contributing
 
