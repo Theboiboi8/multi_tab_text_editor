@@ -165,7 +165,7 @@ pub fn about_modal<'a>(theme: &Theme) -> Element<'a, Message> {
 			.push(text("A text editor that supports syntax \
 			highlighting and multiple files open at once."))
 			.push(separator(theme))
-			.push(text("Created by Theboiboi8"))
+			.push(text("Created by TanchevK"))
 			.push(text("Build using Rust"))
 			.push(separator(theme))
 			.push(row![
@@ -174,7 +174,7 @@ pub fn about_modal<'a>(theme: &Theme) -> Element<'a, Message> {
 					.style(Button::Text)
 					.padding(0)
 					.height(Length::Shrink)
-					.on_press(Message::OpenURL("https://github.com/Theboiboi8/multi_tab_text_editor"))
+					.on_press(Message::OpenURL("https://github.com/tanchevk/multi_tab_text_editor"))
 			])
 	)
 		.style(style::card::CardStyles::Dark)
