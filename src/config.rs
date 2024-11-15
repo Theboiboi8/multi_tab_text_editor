@@ -58,6 +58,7 @@ pub fn theme_to_key(theme: &Theme) -> &str {
 		Theme::Moonfly => "theme.moonfly",
 		Theme::Nightfly => "theme.nightfly",
 		Theme::Oxocarbon => "theme.oxocarbon",
+		Theme::Ferra => "theme.ferra",
 		Theme::Custom(_) => "theme.unknown",
 	}
 }
@@ -85,6 +86,7 @@ pub fn key_to_theme(key: &str) -> Theme {
 		"theme.moonfly" => Theme::Moonfly,
 		"theme.nightfly" => Theme::Nightfly,
 		"theme.oxocarbon" => Theme::Oxocarbon,
+		"theme.ferra" => Theme::Ferra,
 		_ => Theme::Light,
 	}
 }
