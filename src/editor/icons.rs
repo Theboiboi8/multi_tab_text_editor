@@ -1,5 +1,8 @@
-use iced::{Element, Font, Pixels};
-use iced::widget::text;
+use std::path::PathBuf;
+
+use iced::{Element, Font, Length, Pixels};
+use iced::widget::svg::Handle;
+use iced::widget::{svg, text};
 
 use crate::Message;
 
@@ -50,4 +53,30 @@ fn icon<'a>(codepoint: char, size: impl Into<Pixels>) -> Element<'a, Message> {
 		.font(ICON_FONT)
 		.size(size)
 		.into()
+}
+
+fn svg_icon<'a, P, S>(svg_path: P, size: S) -> Element<'a, Message>
+where
+	P: Into<PathBuf>,
+	S: Into<IconSize>
+{
+	let size = size.into();
+	
+	svg(Handle::from_path(svg_path))
+		.width(size.0[0])
+		.height(size.0[1])
+		.into()
+}
+
+#[derive(Debug, Copy, Clone)]
+pub(crate) struct IconSize(pub [Pixels; 2]);
+
+impl<T, U> From<(T, U)> for IconSize
+where
+	T: Into<Pixels>,
+	U: Into<Pixels>,
+{
+	fn from(value: (T, U)) -> Self {
+		IconSize([value.0.into(), value.1.into()])
+	}
 }

@@ -369,31 +369,31 @@ impl Editor {
             {
                 let sub_menu = menu_tpl_2(menu_items![(components::menu_button(
                     row![editor::icons::new_icon(12), components::icon_text("New"),]
-	                    .align_y(Alignment::Center)
+	                    .align_y(Alignment::Center),
                     Message::New
                 ))(
                     components::menu_button(
                         row![editor::icons::open_icon(12), components::icon_text("Open a file"),]
-		                    .align_y(Alignment::Center)
+		                    .align_y(Alignment::Center),
                         Message::Open
                     )
                 )(
                     components::menu_button(
                         row![editor::icons::save_icon(12), components::icon_text("Save"),]
-		                    .align_y(Alignment::Center)
+		                    .align_y(Alignment::Center),
                         Message::Save
                     )
                 )(
                     components::menu_button(
                         row![editor::icons::save_as_icon(12), components::icon_text("Save As"),]
-                            .align_y(Alignment::Center)
+                            .align_y(Alignment::Center),
                         Message::SaveAs
                     )
                 )(
                     if let Some(path) = self.files[self.current].path.clone() {
                         components::menu_button(
                             row![editor::icons::eye_icon(12), components::icon_text("Show in Explorer"),]
-	                            .align_y(Alignment::Center)
+	                            .align_y(Alignment::Center),
                             Message::ShowInExplorer(path),
                         )
                     } else {
@@ -405,7 +405,7 @@ impl Editor {
                 )(
                     components::menu_button(
                         row![editor::icons::close_icon(12), components::icon_text("Close"),]
-	                        .align_y(Alignment::Center)
+	                        .align_y(Alignment::Center),
                         Message::Close
                     )
                 )(
@@ -413,7 +413,7 @@ impl Editor {
                 )(
                     components::menu_button(
                         row![editor::icons::settings_icon(12), components::icon_text("Settings"),]
-	                        .align_y(Alignment::Center)
+	                        .align_y(Alignment::Center),
                         Message::ShowModal(ModalType::Settings)
                     )
                 )])
