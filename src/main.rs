@@ -226,9 +226,7 @@ impl Editor {
 				self.files[self.current].content.perform(action);
 			}
 			Message::Open => {
-				if let Err(error) = Task::perform(pick_file(), Message::FileOpened) {
-					eprint!("An error occurred: {error}");
-				}
+				let _ = Task::perform(pick_file(), Message::FileOpened);
 			}
 			Message::FileOpened(Ok((path, content))) => {
 				assert!(self.current < self.files.len());
@@ -253,21 +251,17 @@ impl Editor {
 
 				let text = self.files[self.current].content.text();
 
-				if let Err(error) = Task::perform(
+				let _ = Task::perform(
 					save_file(self.files[self.current].path.clone(), text),
 					Message::FileSaved,
-				) {
-					eprint!("An error occurred: {error}");
-				}
+				);
 			}
 			Message::SaveAs => {
 				assert!(self.current < self.files.len());
 
 				let text = self.files[self.current].content.text();
 
-				if let Err(error) = Task::perform(save_file(None, text), Message::FileSaved) {
-					eprint!("An error occurred: {error}");
-				}
+				let _ = Task::perform(save_file(None, text), Message::FileSaved);
 			}
 			Message::FileSaved(Ok(path)) => {
 				assert!(self.current < self.files.len());
@@ -481,7 +475,7 @@ impl Editor {
 			.on_action(Message::Edit)
 			.font(*JETBRAINS_MONO)
 			.height(Length::Fill)
-			.highlight_with(
+			.highlight_with::<highlighter::Highlighter>(
 				highlighter::Settings {
 					theme: self.highlighter_theme,
 					token: self.files[self.current]
@@ -527,8 +521,12 @@ impl Editor {
 						.push(status_bar)
 						.spacing(10),
 				)
-					.padding(10),
-				card,
+					.padding(10)
+					.into(),
+				card
+					.unwrap_or_else(||
+						container("").width(Length::Fixed(0.0)).into()
+					),
 			]
 		).into()
 	}

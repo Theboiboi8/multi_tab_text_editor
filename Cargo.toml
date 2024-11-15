@@ -9,7 +9,7 @@ edition = "2021"
 publish = false
 
 [dependencies]
-iced = { version = "0.13.1", features = ["tokio", "highlighter", "svg", "image"] }
+iced = { version = "0.13.1", features = ["tokio", "highlighter", "svg", "image", "advanced"] }
 iced_aw = { version = "0.11.0", default-features = false, features = ["card", "menu", "quad"] }
 tokio = { version = "1", features = ["full"] }
 serde = { version = "1.0", features = ["derive", "std"] }

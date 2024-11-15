@@ -1,19 +1,17 @@
-use iced::{Alignment, Background, Border, Element, Length, Theme, theme};
 use iced::alignment::Horizontal;
-use iced::theme::Button;
-use iced::widget::{button, Column, ComboBox, container, row, text, tooltip};
-use iced::widget::button::Appearance;
-use iced_aw::{card, quad, style};
+use iced::widget::{button, container, row, text, tooltip, Column, ComboBox};
+use iced::{Alignment, Border, Element, Length, Theme};
 use iced_aw::widgets::InnerBounds;
+use iced_aw::{card, quad, style};
 
-use crate::{Editor, Message};
 use crate::editor::icons;
+use crate::{Editor, Message};
 
 pub fn separator(theme: &Theme) -> quad::Quad {
 	quad::Quad {
 		quad_color: theme.extended_palette().primary.weak.color.into(),
 		quad_border: Border {
-			radius: [4.0; 4].into(),
+			radius: 4.0.into(),
 			..Default::default()
 		},
 		inner_bounds: InnerBounds::Ratio(0.99, 0.1),
@@ -29,13 +27,12 @@ pub fn menubar_button<'a>(
 ) -> Element<'a, Message> {
 	let inner = button(
 		container(content.into())
-			.width(Length::Shrink)
-			.center_x()
-			.center_y()
+			.center_x(Length::Shrink)
+			.center_y(Length::Shrink)
 			.padding([2, 4])
 	)
-		.on_press(action)
-		.style(Button::Text);
+		.style(button::text)
+		.on_press(action);
 
 	if let Some(tooltip_label) = tooltip {
 		iced::widget::tooltip(
@@ -43,46 +40,9 @@ pub fn menubar_button<'a>(
 			tooltip_label,
 			tooltip::Position::Bottom,
 		)
-			.style(theme::Container::Box)
 			.into()
 	} else {
 		inner.into()
-	}
-}
-
-#[derive(Copy, Clone)]
-pub struct MenuButtonStyle;
-
-impl button::StyleSheet for MenuButtonStyle {
-	type Style = Theme;
-
-	fn active(&self, style: &Self::Style) -> Appearance {
-		let palette = style.extended_palette();
-
-		let appearance = Appearance {
-			border: Border::with_radius(2),
-			..Appearance::default()
-		};
-
-		Appearance {
-			text_color: palette.background.base.text,
-			..appearance
-		}
-	}
-
-	fn hovered(&self, style: &Self::Style) -> Appearance {
-		let palette = style.extended_palette();
-
-		let active = self.active(style);
-
-		Appearance {
-			background: Some(Background::from(palette.background.weak.color)),
-			..active
-		}
-	}
-
-	fn pressed(&self, style: &Self::Style) -> Appearance {
-		self.hovered(style)
 	}
 }
 
@@ -94,11 +54,11 @@ pub fn menu_button<'a>(
 		container(content.into())
 			.width(Length::Fill)
 			.align_x(Horizontal::Left)
-			.center_y()
+			.center_y(Length::Shrink)
 			.padding([2, 4])
 	)
 		.on_press(action)
-		.style(Button::Custom(Box::new(MenuButtonStyle)));
+		.style(button::text);
 
 	inner.into()
 }
@@ -110,10 +70,10 @@ pub fn menu_button_disabled<'a>(
 		container(content.into())
 			.width(Length::Fill)
 			.align_x(Horizontal::Left)
-			.center_y()
+			.center_y(Length::Shrink)
 			.padding([2, 4])
 	)
-		.style(Button::Custom(Box::new(MenuButtonStyle)));
+		.style(button::text);
 
 	inner.into()
 }
@@ -129,20 +89,19 @@ pub fn tab(
 			row![
 					content,
 					button(icons::close_icon(16))
-						.style(Button::Custom(Box::new(MenuButtonStyle)))
 						.width(Length::Shrink)
 						.on_press(Message::CloseIndex(index))
 				]
-				.align_items(Alignment::Center)
+				.align_y(Alignment::Center)
 		)
 			.width(128)
 			.align_x(Horizontal::Center)
-			.center_y()
+			.center_y(Length::Shrink)
 	)
 		.style(if highlighted {
-			Button::Primary
+			button::primary
 		} else {
-			Button::Custom(Box::new(MenuButtonStyle))
+			button::text
 		})
 		.on_press(on_press)
 		.padding([5, 10])
@@ -160,10 +119,9 @@ pub fn about_modal<'a>(theme: &Theme) -> Element<'a, Message> {
 				.width(Length::Fill)
 				.size(24),
 			button(icons::close_icon(16))
-				.style(Button::Custom(Box::new(MenuButtonStyle)))
 				.width(Length::Shrink)
 				.on_press(Message::HideModal)
-		].align_items(Alignment::Center),
+		].align_y(Alignment::Center),
 		Column::new()
 			.push(text("Multi Tab Text Editor"))
 			.push(text("A text editor that supports syntax \
@@ -174,14 +132,17 @@ pub fn about_modal<'a>(theme: &Theme) -> Element<'a, Message> {
 			.push(separator(theme))
 			.push(row![
 				text("Source code is available on GitHub "),
-				button(row!["here", icons::external_icon(13)].align_items(Alignment::Center))
-					.style(Button::Text)
+				button(
+					row!["here", icons::external_icon(13)]
+						.align_y(Alignment::Center)
+				)
+					.style(button::text)
 					.padding(0)
 					.height(Length::Shrink)
 					.on_press(Message::OpenURL("https://github.com/tanchevk/multi_tab_text_editor"))
 			])
 	)
-		.style(style::card::CardStyles::Dark)
+		.style(style::card::dark)
 		.width(640)
 		.height(360)
 		.into()
@@ -194,10 +155,10 @@ pub fn settings_modal(state: &Editor) -> Element<Message> {
 				.width(Length::Fill)
 				.size(24),
 			button(icons::close_icon(16))
-				.style(Button::Custom(Box::new(MenuButtonStyle)))
+				.style(button::text)
 				.width(Length::Shrink)
 				.on_press(Message::HideModal)
-		].align_items(Alignment::Center),
+		].align_y(Alignment::Center),
 		Column::new()
 			.push(text("Selected theme"))
 			.push(ComboBox::new(
@@ -217,7 +178,7 @@ pub fn settings_modal(state: &Editor) -> Element<Message> {
 			.push(separator(&state.theme))
 			.width(600)
 	)
-		.style(style::card::CardStyles::Dark)
+		.style(style::card::dark)
 		.width(640)
 		.height(360)
 		.into()
