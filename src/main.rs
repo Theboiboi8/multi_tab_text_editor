@@ -515,7 +515,7 @@ impl Application for Editor {
 						.path
 						.as_ref()
 						.and_then(|path| path.extension()?.to_str())
-						.unwrap_or("rs")
+						.unwrap_or("txt")
 						.to_string(),
 				},
 				|highlight, _theme| highlight.to_format(),
