@@ -7,17 +7,13 @@ use std::io;
 use std::path::{Path, PathBuf};
 use std::sync::{Arc, LazyLock};
 
-use iced::highlighter::Highlighter;
 use iced::widget::combo_box::State;
-use iced::widget::{container, horizontal_space, row, text, text_editor, Column, Row};
-use iced::window::settings::PlatformSpecific;
+use iced::widget::{container, horizontal_space, row, stack, text, text_editor, Column, Row};
+use iced::{highlighter, window, Alignment, Element, Font, Length, Pixels, Settings, Size, Task, Theme};
 use iced::window::{icon, Level, Position};
-use iced::{
-	executor, highlighter, window, Alignment, Application, Command, Element, Font, Length, Pixels,
-	Settings, Size, Theme,
-};
+use iced::window::settings::PlatformSpecific;
 use iced_aw::menu::{Item, Menu};
-use iced_aw::{menu, menu_bar, menu_items, Modal};
+use iced_aw::{menu, menu_bar, menu_items};
 use serde::{Deserialize, Serialize};
 
 mod editor;
@@ -28,9 +24,25 @@ pub static JETBRAINS_MONO: LazyLock<Font> = LazyLock::new(|| Font::with_name("Je
 pub static INTER: LazyLock<Font> = LazyLock::new(|| Font::with_name("Inter"));
 
 fn main() -> iced::Result {
-	Editor::run(Settings {
-		id: None,
-		window: window::Settings {
+	iced::application(Editor::title, Editor::update, Editor::view)
+		.settings(Settings {
+			id: None,
+			fonts: vec![
+				include_bytes!("../assets/bootstrap-icons.ttf")
+					.as_slice()
+					.into(),
+				include_bytes!("../assets/JetBrainsMono.ttf")
+					.as_slice()
+					.into(),
+				include_bytes!("../assets/Inter-Regular.ttf")
+					.as_slice()
+					.into(),
+			],
+			default_font: *INTER,
+			default_text_size: Pixels(13.0),
+			antialiasing: true,
+		})
+		.window(window::Settings {
 			size: Size::new(1024.0, 756.0),
 			position: Position::default(),
 			min_size: Some(Size::new(420.0, 280.0)),
@@ -43,23 +55,9 @@ fn main() -> iced::Result {
 			icon: Some(icon::from_file_data(include_bytes!("../assets/icon.png"), None).unwrap()),
 			platform_specific: PlatformSpecific::default(),
 			exit_on_close_request: true,
-		},
-		flags: Default::default(),
-		fonts: vec![
-			include_bytes!("../assets/bootstrap-icons.ttf")
-				.as_slice()
-				.into(),
-			include_bytes!("../assets/JetBrainsMono.ttf")
-				.as_slice()
-				.into(),
-			include_bytes!("../assets/Inter-Regular.ttf")
-				.as_slice()
-				.into(),
-		],
-		default_font: *INTER,
-		default_text_size: Pixels(13.0),
-		antialiasing: true,
-	})
+		})
+		.theme(Editor::theme)
+		.run_with(|| Editor::new())
 }
 
 struct Editor {
@@ -159,13 +157,8 @@ pub const THEMES: [Theme; 21] = [
 	Theme::Oxocarbon,
 ];
 
-impl Application for Editor {
-	type Executor = executor::Default;
-	type Message = Message;
-	type Theme = Theme;
-	type Flags = ();
-
-	fn new(_flags: Self::Flags) -> (Self, Command<Message>) {
+impl Editor {
+	fn new() -> (Self, Task<Message>) {
 		let (theme, syntax) = if let Some(config) = &*config::CONFIG {
 			(
 				config::key_to_theme(&config.theme),
@@ -187,7 +180,7 @@ impl Application for Editor {
 				highlighter_theme: syntax,
 				highlighter_themes: State::new(highlighter::Theme::ALL.to_vec()),
 			},
-			Command::none(),
+			Task::none()
 		)
 	}
 
@@ -221,7 +214,7 @@ impl Application for Editor {
 	}
 
 	#[allow(clippy::too_many_lines)]
-	fn update(&mut self, message: Message) -> Command<Message> {
+	fn update(&mut self, message: Message) {
 		match message {
 			Message::Edit(action) => {
 				assert!(self.current < self.files.len());
@@ -231,10 +224,12 @@ impl Application for Editor {
 				self.error = None;
 
 				self.files[self.current].content.perform(action);
-
-				Command::none()
 			}
-			Message::Open => Command::perform(pick_file(), Message::FileOpened),
+			Message::Open => {
+				if let Err(error) = Task::perform(pick_file(), Message::FileOpened) {
+					eprint!("An error occurred: {error}");
+				}
+			}
 			Message::FileOpened(Ok((path, content))) => {
 				assert!(self.current < self.files.len());
 
@@ -244,45 +239,41 @@ impl Application for Editor {
 
 				self.files[self.current].path = Some(path);
 				self.files[self.current].content = text_editor::Content::with_text(&content);
-
-				Command::none()
 			}
 			Message::FileOpened(Err(error)) | Message::FileSaved(Err(error)) => {
 				self.error = Some(error);
-
-				Command::none()
 			}
 			Message::New => {
 				self.files.push(File::empty());
 
 				self.current = self.files.len() - 1;
-
-				Command::none()
 			}
 			Message::Save => {
 				assert!(self.current < self.files.len());
 
 				let text = self.files[self.current].content.text();
 
-				Command::perform(
+				if let Err(error) = Task::perform(
 					save_file(self.files[self.current].path.clone(), text),
 					Message::FileSaved,
-				)
+				) {
+					eprint!("An error occurred: {error}");
+				}
 			}
 			Message::SaveAs => {
 				assert!(self.current < self.files.len());
 
 				let text = self.files[self.current].content.text();
 
-				Command::perform(save_file(None, text), Message::FileSaved)
+				if let Err(error) = Task::perform(save_file(None, text), Message::FileSaved) {
+					eprint!("An error occurred: {error}");
+				}
 			}
 			Message::FileSaved(Ok(path)) => {
 				assert!(self.current < self.files.len());
 
 				self.files[self.current].path = Some(path);
 				self.files[self.current].is_modified = false;
-
-				Command::none()
 			}
 			Message::Close => {
 				assert!(self.current < self.files.len());
@@ -303,8 +294,6 @@ impl Application for Editor {
 				} else {
 					self.files[self.current] = File::empty();
 				}
-
-				Command::none()
 			}
 			Message::CloseIndex(index) => {
 				assert!(self.current < self.files.len());
@@ -324,59 +313,43 @@ impl Application for Editor {
 				} else {
 					self.files[self.current] = File::empty();
 				}
-
-				Command::none()
 			}
 			Message::SelectFile(index) => {
 				self.current = index;
-
-				Command::none()
 			}
 			Message::OpenURL(url) => {
 				if opener::open(url).is_err() {
 					eprintln!("Failed to open url {url}");
 				}
-
-				Command::none()
 			}
 			Message::ShowInExplorer(path) => {
 				if opener::open(path.clone()).is_err() {
 					eprintln!("Failed to open path {}", path.display());
 				}
-
-				Command::none()
 			}
 			Message::ShowModal(modal_type) => {
 				self.modal_shown = true;
 				self.modal_type = modal_type;
-
-				Command::none()
 			}
 			Message::HideModal => {
 				self.modal_shown = false;
-
-				Command::none()
 			}
 			Message::SelectTheme(theme) => {
 				self.theme = theme;
 
 				config::save(self);
-
-				Command::none()
 			}
 			Message::SelectSyntaxTheme(theme) => {
 				self.highlighter_theme = theme;
 
 				config::save(self);
-
-				Command::none()
 			}
-			Message::None => Command::none(),
+			Message::None => {}
 		}
 	}
 
 	#[allow(clippy::too_many_lines)]
-	fn view(&self) -> Element<'_, Self::Message> {
+	fn view(&self) -> Element<'_, Message> {
 		use editor::components;
 		
 		let card = if self.modal_shown {
@@ -402,43 +375,43 @@ impl Application for Editor {
             {
                 let sub_menu = menu_tpl_2(menu_items![(components::menu_button(
                     row![editor::icons::new_icon(12), components::icon_text("New"),]
-                        .align_items(Alignment::Center),
+	                    .align_y(Alignment::Center)
                     Message::New
                 ))(
                     components::menu_button(
                         row![editor::icons::open_icon(12), components::icon_text("Open a file"),]
-                            .align_items(Alignment::Center),
+		                    .align_y(Alignment::Center)
                         Message::Open
                     )
                 )(
                     components::menu_button(
                         row![editor::icons::save_icon(12), components::icon_text("Save"),]
-                            .align_items(Alignment::Center),
+		                    .align_y(Alignment::Center)
                         Message::Save
                     )
                 )(
                     components::menu_button(
                         row![editor::icons::save_as_icon(12), components::icon_text("Save As"),]
-                            .align_items(Alignment::Center),
+                            .align_y(Alignment::Center)
                         Message::SaveAs
                     )
                 )(
                     if let Some(path) = self.files[self.current].path.clone() {
                         components::menu_button(
                             row![editor::icons::eye_icon(12), components::icon_text("Show in Explorer"),]
-                                .align_items(Alignment::Center),
+	                            .align_y(Alignment::Center)
                             Message::ShowInExplorer(path),
                         )
                     } else {
                         components::menu_button_disabled(
                             row![editor::icons::eye_icon(12), components::icon_text("Show in Explorer"),]
-                                .align_items(Alignment::Center),
+	                            .align_y(Alignment::Center)
                         )
                     }
                 )(
                     components::menu_button(
                         row![editor::icons::close_icon(12), components::icon_text("Close"),]
-                            .align_items(Alignment::Center),
+	                        .align_y(Alignment::Center)
                         Message::Close
                     )
                 )(
@@ -446,7 +419,7 @@ impl Application for Editor {
                 )(
                     components::menu_button(
                         row![editor::icons::settings_icon(12), components::icon_text("Settings"),]
-                            .align_items(Alignment::Center),
+	                        .align_y(Alignment::Center)
                         Message::ShowModal(ModalType::Settings)
                     )
                 )])
@@ -459,12 +432,12 @@ impl Application for Editor {
             {
                 let sub_menu = menu_tpl_2(menu_items![(components::menu_button(
                     row![editor::icons::info_icon(12), text("   About"),]
-                        .align_items(Alignment::Center),
+                        .align_y(Alignment::Center),
                     Message::ShowModal(ModalType::About)
                 ))(
                     components::menu_button(
                         row![editor::icons::git_icon(12), text("   Source"),]
-                            .align_items(Alignment::Center),
+                            .align_y(Alignment::Center),
                         Message::OpenURL("https://github.com/Theboiboi8/multi_tab_text_editor")
                     )
                 )])
@@ -508,10 +481,10 @@ impl Application for Editor {
 			.on_action(Message::Edit)
 			.font(*JETBRAINS_MONO)
 			.height(Length::Fill)
-			.highlight::<Highlighter>(
+			.highlight_with(
 				highlighter::Settings {
 					theme: self.highlighter_theme,
-					extension: self.files[self.current]
+					token: self.files[self.current]
 						.path
 						.as_ref()
 						.and_then(|path| path.extension()?.to_str())
@@ -544,19 +517,20 @@ impl Application for Editor {
 			row![status, horizontal_space(), position]
 		};
 
-		Modal::new(
-			container(
-				Column::new()
-					.push(menu_bar)
-					.push(tabs)
-					.push(input)
-					.push(status_bar)
-					.spacing(10),
-			)
-				.padding(10),
-			card,
-		)
-			.into()
+		stack(
+			[
+				container(
+					Column::new()
+						.push(menu_bar)
+						.push(tabs)
+						.push(input)
+						.push(status_bar)
+						.spacing(10),
+				)
+					.padding(10),
+				card,
+			]
+		).into()
 	}
 
 	fn theme(&self) -> Theme {
