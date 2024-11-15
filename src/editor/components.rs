@@ -88,7 +88,7 @@ pub fn tab(
 		container(
 			row![
 					content,
-					button(icons::close_icon(16))
+					button(icons::close_icon(18.0, &Theme::Light))
 						.width(Length::Shrink)
 						.on_press(Message::CloseIndex(index))
 						.style(button::text)
@@ -119,7 +119,7 @@ pub fn about_modal<'a>(theme: &Theme) -> Element<'a, Message> {
 			text("About")
 				.width(Length::Fill)
 				.size(24),
-			button(icons::close_icon(16))
+			button(icons::close_icon(24.0, theme))
 				.width(Length::Shrink)
 				.on_press(Message::HideModal)
 				.style(button::text)
@@ -135,7 +135,7 @@ pub fn about_modal<'a>(theme: &Theme) -> Element<'a, Message> {
 			.push(row![
 				text("Source code is available on GitHub "),
 				button(
-					row!["here", icons::external_icon(13)]
+					row!["here", icons::external_icon(18.0, theme)]
 						.align_y(Alignment::Center)
 				)
 					.style(button::text)
@@ -156,7 +156,7 @@ pub fn settings_modal(state: &Editor) -> Element<Message> {
 			text("Settings")
 				.width(Length::Fill)
 				.size(24),
-			button(icons::close_icon(16))
+			button(icons::close_icon(24.0, &state.theme))
 				.style(button::text)
 				.width(Length::Shrink)
 				.on_press(Message::HideModal)

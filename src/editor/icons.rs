@@ -1,68 +1,165 @@
-use std::path::PathBuf;
-
-use iced::{Element, Font, Length, Pixels};
-use iced::widget::svg::Handle;
-use iced::widget::{svg, text};
-
 use crate::Message;
+use iced::widget::svg::Handle;
+use iced::widget::svg;
+use iced::{Element, Pixels, Theme};
+use include_dir::{include_dir, Dir};
+use std::collections::HashMap;
+use std::path::{Path, PathBuf};
+use std::sync::LazyLock;
 
-pub fn new_icon<'a>(size: impl Into<Pixels>) -> Element<'a, Message> {
-	icon('\u{F37D}', size)
+pub static ICON_MAP: LazyLock<HashMap<&str, SvgIcon>> = LazyLock::new(|| {
+	HashMap::from([
+		("add", SvgIcon::with_dark_suffix(&PathBuf::from("assets/icons/addFile"), "_dark")),
+		("file", SvgIcon::with_dark_suffix(&PathBuf::from("assets/icons/anyType"), "_dark")),
+		("close", SvgIcon::with_dark_suffix(&PathBuf::from("assets/icons/close"), "_dark")),
+		("save_as", SvgIcon::with_dark_suffix(&PathBuf::from("assets/icons/download"), "_dark")),
+		("empty", SvgIcon::single(&PathBuf::from("assets/icons/empty"))),
+		("exit", SvgIcon::with_dark_suffix(&PathBuf::from("assets/icons/exit"), "_dark")),
+		("external", SvgIcon::with_dark_suffix(&PathBuf::from("assets/icons/externalLink"), "_dark")),
+		("info", SvgIcon::with_dark_suffix(&PathBuf::from("assets/icons/infoOutline"), "_dark")),
+		("settings", SvgIcon::with_dark_suffix(&PathBuf::from("assets/icons/inlaySettings"), "_dark")),
+		("eye", SvgIcon::with_dark_suffix(&PathBuf::from("assets/icons/inspectionsEye"), "_dark")),
+		("save", SvgIcon::with_dark_suffix(&PathBuf::from("assets/icons/save"), "_dark")),
+		("vcs", SvgIcon::with_dark_suffix(&PathBuf::from("assets/icons/vcs"), "_dark")),
+	])
+});
+
+const ICONS: Dir = include_dir!("$CARGO_MANIFEST_DIR/assets/icons");
+
+#[derive(Debug, Clone)]
+pub struct SvgIcon {
+	pub light: PathBuf,
+	pub dark: PathBuf,
+	pub dark_suffix: Option<String>,
 }
 
-pub fn save_icon<'a>(size: impl Into<Pixels>) -> Element<'a, Message> {
-	icon('\u{F7D8}', size)
+impl SvgIcon {
+	pub fn with_dark_suffix(path: &dyn AsRef<Path>, suffix: &str) -> Self {
+		let path = path.as_ref();
+		
+		let mut dark_path = path.to_str().unwrap().to_string();
+
+		dark_path.push_str(suffix);
+
+		Self {
+			light: path.with_extension("svg"),
+			dark: PathBuf::from(dark_path).with_extension("svg"),
+			dark_suffix: Some(suffix.to_string())
+		}
+	}
+	
+	pub fn single(path: &dyn AsRef<Path>) -> Self {
+		let path = path.as_ref();
+		
+		Self {
+			light: path.to_path_buf().with_extension("svg"),
+			dark: path.to_path_buf().with_extension("svg"),
+			dark_suffix: None
+		}
+	}
+	
+	#[inline]
+	pub fn get_variant(&self, theme: &Theme) -> PathBuf {
+		if self.dark_suffix.is_none() {
+			return self.light.clone()
+		}
+		
+		if crate::config::LIGHT_THEMES.contains(theme) {
+			self.light.clone()
+		} else {
+			self.dark.clone()
+		}
+	}
 }
 
-pub fn save_as_icon<'a>(size: impl Into<Pixels>) -> Element<'a, Message> {
-	icon('\u{F30A}', size)
+fn get_icon_by_name(name: &str) -> &SvgIcon {
+	ICON_MAP.get(name).unwrap_or_else(|| {
+		panic!("Failed to get icon: {name}");
+	})
 }
 
-pub fn open_icon<'a>(size: impl Into<Pixels>) -> Element<'a, Message> {
-	icon('\u{F392}', size)
+fn get_icon_handle_by_name(name: &str, theme: &Theme) -> Handle {
+	get_icon_handle(SvgIcon::get_variant(get_icon_by_name(name), theme))
 }
 
-pub fn close_icon<'a>(size: impl Into<Pixels>) -> Element<'a, Message> {
-	icon('\u{F659}', size)
+fn get_icon_handle(icon_path: impl AsRef<Path>) -> Handle {
+	let icon_path = icon_path.as_ref();
+	
+	let glob = &*format!("**/**/{}", icon_path.to_path_buf().file_name().unwrap().to_str().unwrap());
+
+	let icon = ICONS
+		.find(glob)
+		.unwrap_or_else(|error| {
+			panic!("Failed to match glob pattern \"{glob}\": {error}");
+		})
+		.last()
+		.unwrap_or_else(|| {
+			panic!("Failed to find icon: {}", icon_path.display());
+		})
+		.as_file()
+		.unwrap_or_else(|| {
+			panic!("Error: Matched glob is not a file");
+		});
+
+	Handle::from_memory(icon.contents())
 }
 
-pub fn info_icon<'a>(size: impl Into<Pixels>) -> Element<'a, Message> {
-	icon('\u{F646}', size)
+pub fn new_icon<'a>(size: impl Into<IconSize>, theme: &Theme) -> Element<'a, Message> {
+	icon(get_icon_handle_by_name("add", theme), size)
 }
 
-pub fn git_icon<'a>(size: impl Into<Pixels>) -> Element<'a, Message> {
-	icon('\u{F69D}', size)
+pub fn save_icon<'a>(size: impl Into<IconSize>, theme: &Theme) -> Element<'a, Message> {
+	icon(get_icon_handle_by_name("save", theme), size)
 }
 
-pub fn external_icon<'a>(size: impl Into<Pixels>) -> Element<'a, Message> {
-	icon('\u{F144}', size)
+pub fn save_as_icon<'a>(size: impl Into<IconSize>, theme: &Theme) -> Element<'a, Message> {
+	icon(get_icon_handle_by_name("save_as", theme), size)
 }
 
-pub fn eye_icon<'a>(size: impl Into<Pixels>) -> Element<'a, Message> {
-	icon('\u{F341}', size)
+pub fn open_icon<'a>(size: impl Into<IconSize>, theme: &Theme) -> Element<'a, Message> {
+	icon(get_icon_handle_by_name("file", theme), size)
 }
 
-pub fn settings_icon<'a>(size: impl Into<Pixels>) -> Element<'a, Message> {
-	icon('\u{F3E5}', size)
+pub fn close_icon<'a>(size: impl Into<IconSize>, theme: &Theme) -> Element<'a, Message> {
+	icon(get_icon_handle_by_name("close", theme), size)
 }
 
-fn icon<'a>(codepoint: char, size: impl Into<Pixels>) -> Element<'a, Message> {
-	const ICON_FONT: Font = Font::with_name("bootstrap-icons");
-
-	text(codepoint)
-		.font(ICON_FONT)
-		.size(size)
-		.into()
+pub fn info_icon<'a>(size: impl Into<IconSize>, theme: &Theme) -> Element<'a, Message> {
+	icon(get_icon_handle_by_name("info", theme), size)
 }
 
-fn svg_icon<'a, P, S>(svg_path: P, size: S) -> Element<'a, Message>
+pub fn git_icon<'a>(size: impl Into<IconSize>, theme: &Theme) -> Element<'a, Message> {
+	icon(get_icon_handle_by_name("vcs", theme), size)
+}
+
+pub fn external_icon<'a>(size: impl Into<IconSize>, theme: &Theme) -> Element<'a, Message> {
+	icon(get_icon_handle_by_name("external", theme), size)
+}
+
+pub fn eye_icon<'a>(size: impl Into<IconSize>, theme: &Theme) -> Element<'a, Message> {
+	icon(get_icon_handle_by_name("eye", theme), size)
+}
+
+pub fn settings_icon<'a>(size: impl Into<IconSize>, theme: &Theme) -> Element<'a, Message> {
+	icon(get_icon_handle_by_name("settings", theme), size)
+}
+
+#[allow(dead_code)]
+pub fn empty_icon<'a>(size: impl Into<IconSize>, theme: &Theme) -> Element<'a, Message> {
+	icon(get_icon_handle_by_name("empty", theme), size)
+}
+
+pub fn exit_icon<'a>(size: impl Into<IconSize>, theme: &Theme) -> Element<'a, Message> {
+	icon(get_icon_handle_by_name("exit", theme), size)
+}
+
+fn icon<'a, S>(handle: Handle, size: S) -> Element<'a, Message>
 where
-	P: Into<PathBuf>,
 	S: Into<IconSize>
 {
 	let size = size.into();
-	
-	svg(Handle::from_path(svg_path))
+
+	svg(handle)
 		.width(size.0[0])
 		.height(size.0[1])
 		.into()
@@ -77,6 +174,12 @@ where
 	U: Into<Pixels>,
 {
 	fn from(value: (T, U)) -> Self {
-		IconSize([value.0.into(), value.1.into()])
+		Self([value.0.into(), value.1.into()])
+	}
+}
+
+impl From<f32> for IconSize {
+	fn from(value: f32) -> Self {
+		Self([value.into(), value.into()])
 	}
 }

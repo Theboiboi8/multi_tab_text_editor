@@ -9,9 +9,9 @@ use std::sync::{Arc, LazyLock};
 
 use iced::widget::combo_box::State;
 use iced::widget::{container, horizontal_space, row, stack, text, text_editor, Column, Row};
-use iced::{highlighter, window, Alignment, Element, Font, Length, Pixels, Settings, Size, Task, Theme};
-use iced::window::{icon, Level, Position};
 use iced::window::settings::PlatformSpecific;
+use iced::window::{icon, Level, Position};
+use iced::{highlighter, window, Alignment, Element, Font, Length, Pixels, Settings, Size, Task, Theme};
 use iced_aw::menu::{Item, Menu};
 use iced_aw::{menu, menu_bar, menu_items};
 use serde::{Deserialize, Serialize};
@@ -23,14 +23,13 @@ pub static JETBRAINS_MONO: LazyLock<Font> = LazyLock::new(|| Font::with_name("Je
 
 pub static INTER: LazyLock<Font> = LazyLock::new(|| Font::with_name("Inter"));
 
+pub static PATH_FALLBACK: LazyLock<&Path> = LazyLock::new(|| Box::leak(PathBuf::from("~").into_boxed_path()));
+
 fn main() -> iced::Result {
 	iced::application(Editor::title, Editor::update, Editor::view)
 		.settings(Settings {
 			id: None,
 			fonts: vec![
-				include_bytes!("../assets/bootstrap-icons.ttf")
-					.as_slice()
-					.into(),
 				include_bytes!("../assets/JetBrainsMono.ttf")
 					.as_slice()
 					.into(),
@@ -124,6 +123,7 @@ enum Message {
 	HideModal,
 	SelectTheme(Theme),
 	SelectSyntaxTheme(highlighter::Theme),
+	Exit,
 	None,
 }
 
@@ -293,7 +293,11 @@ impl Editor {
 				}
 			}
 			Message::ShowInExplorer(path) => {
-				if opener::open(path.clone()).is_err() {
+				if opener::open(path.clone().parent().unwrap_or_else(|| {
+					eprintln!("Failed to get parent path for file: {}", path.display());
+					
+					*PATH_FALLBACK
+				})).is_err() {
 					eprintln!("Failed to open path {}", path.display());
 				}
 			}
@@ -313,6 +317,9 @@ impl Editor {
 				self.highlighter_theme = theme;
 
 				config::save(self);
+			}
+			Message::Exit => {
+				return window::get_latest().and_then(window::close)
 			}
 			Message::None => {}
 		}
@@ -346,43 +353,43 @@ impl Editor {
             components::menubar_button(text("File"), None, Message::None),
             {
                 let sub_menu = menu_tpl_2(menu_items![(components::menu_button(
-                    row![editor::icons::new_icon(12), components::icon_text("New"),]
+                    row![editor::icons::new_icon(18.0, &self.theme), components::icon_text("New"),]
 	                    .align_y(Alignment::Center),
                     Message::New
                 ))(
                     components::menu_button(
-                        row![editor::icons::open_icon(12), components::icon_text("Open a file"),]
+                        row![editor::icons::open_icon(18.0, &self.theme), components::icon_text("Open a file"),]
 		                    .align_y(Alignment::Center),
                         Message::Open
                     )
                 )(
                     components::menu_button(
-                        row![editor::icons::save_icon(12), components::icon_text("Save"),]
+                        row![editor::icons::save_icon(18.0, &self.theme), components::icon_text("Save"),]
 		                    .align_y(Alignment::Center),
                         Message::Save
                     )
                 )(
                     components::menu_button(
-                        row![editor::icons::save_as_icon(12), components::icon_text("Save As"),]
+                        row![editor::icons::save_as_icon(18.0, &self.theme), components::icon_text("Save As"),]
                             .align_y(Alignment::Center),
                         Message::SaveAs
                     )
                 )(
                     if let Some(path) = self.files[self.current].path.clone() {
                         components::menu_button(
-                            row![editor::icons::eye_icon(12), components::icon_text("Show in Explorer"),]
+                            row![editor::icons::eye_icon(18.0, &self.theme), components::icon_text("Show in Explorer"),]
 	                            .align_y(Alignment::Center),
                             Message::ShowInExplorer(path),
                         )
                     } else {
                         components::menu_button_disabled(
-                            row![editor::icons::eye_icon(12), components::icon_text("Show in Explorer"),]
+                            row![editor::icons::eye_icon(18.0, &self.theme), components::icon_text("Show in Explorer"),]
 	                            .align_y(Alignment::Center)
                         )
                     }
                 )(
                     components::menu_button(
-                        row![editor::icons::close_icon(12), components::icon_text("Close"),]
+                        row![editor::icons::close_icon(18.0, &self.theme), components::icon_text("Close"),]
 	                        .align_y(Alignment::Center),
                         Message::Close
                     )
@@ -390,9 +397,15 @@ impl Editor {
                     components::separator(&self.theme)
                 )(
                     components::menu_button(
-                        row![editor::icons::settings_icon(12), components::icon_text("Settings"),]
+                        row![editor::icons::settings_icon(18.0, &self.theme), components::icon_text("Settings"),]
 	                        .align_y(Alignment::Center),
                         Message::ShowModal(ModalType::Settings)
+                    )
+                )(
+                    components::menu_button(
+                        row![editor::icons::exit_icon(18.0, &self.theme), components::icon_text("Exit"),]
+	                        .align_y(Alignment::Center),
+                        Message::Exit
                     )
                 )])
                 .width(180.0);
@@ -403,12 +416,12 @@ impl Editor {
             components::menubar_button(text("Help"), None, Message::None),
             {
                 let sub_menu = menu_tpl_2(menu_items![(components::menu_button(
-                    row![editor::icons::info_icon(12), text("   About"),]
+                    row![editor::icons::info_icon(18.0, &self.theme), components::icon_text("About"),]
                         .align_y(Alignment::Center),
                     Message::ShowModal(ModalType::About)
                 ))(
                     components::menu_button(
-                        row![editor::icons::git_icon(12), text("   Source"),]
+                        row![editor::icons::git_icon(18.0, &self.theme), components::icon_text("Source"),]
                             .align_y(Alignment::Center),
                         Message::OpenURL("https://github.com/Theboiboi8/multi_tab_text_editor")
                     )
@@ -501,10 +514,15 @@ impl Editor {
 				)
 					.padding(10)
 					.into(),
-				card
-					.unwrap_or_else(||
+				container(
+					card.unwrap_or_else(||
 						container("").width(Length::Fixed(0.0)).into()
-					),
+					)
+				)
+					.width(Length::Fill)
+					.height(Length::Fill)
+					.center(Length::Fill)
+					.into(),
 			]
 		).into()
 	}

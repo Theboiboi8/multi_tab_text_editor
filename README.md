@@ -48,6 +48,3 @@ created by [JetBrains s.r.o.](https://www.jetbrains.com)
 
 This project uses the [Inter](https://rsms.me/inter/) font,
 created by [Rasmus Andersson](https://rsms.me/)
-
-This project uses the [Bootstrap Icons](https://icons.getbootstrap.com/) font,
-created by [Bootstrap](https://getbootstrap.com/)

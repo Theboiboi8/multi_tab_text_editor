@@ -34,6 +34,15 @@ pub static CONFIG: LazyLock<Option<SettingsState>> = LazyLock::new(|| {
 	}
 });
 
+pub const LIGHT_THEMES: &[Theme] = &[
+	Theme::Light,
+	Theme::CatppuccinLatte,
+	Theme::GruvboxLight,
+	Theme::SolarizedLight,
+	Theme::TokyoNightLight,
+	Theme::KanagawaLotus
+];
+
 #[must_use]
 pub fn theme_to_key(theme: &Theme) -> &str {
 	match theme {
