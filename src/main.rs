@@ -515,8 +515,6 @@ impl Editor {
 }
 
 async fn pick_file() -> Result<(PathBuf, Arc<String>), Error> {
-	println!("pick_file called");
-	
 	let handle = rfd::AsyncFileDialog::new()
 		.set_title("Open File:")
 		.pick_file()
