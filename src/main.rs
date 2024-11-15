@@ -57,7 +57,7 @@ fn main() -> iced::Result {
 			exit_on_close_request: true,
 		})
 		.theme(Editor::theme)
-		.run_with(|| Editor::new())
+		.run_with(Editor::new)
 }
 
 struct Editor {
@@ -133,30 +133,6 @@ enum ModalType {
 	Settings,
 }
 
-pub const THEMES: [Theme; 21] = [
-	Theme::Light,
-	Theme::Dark,
-	Theme::Dracula,
-	Theme::Nord,
-	Theme::SolarizedLight,
-	Theme::SolarizedDark,
-	Theme::GruvboxLight,
-	Theme::GruvboxDark,
-	Theme::CatppuccinLatte,
-	Theme::CatppuccinFrappe,
-	Theme::CatppuccinMacchiato,
-	Theme::CatppuccinMocha,
-	Theme::TokyoNight,
-	Theme::TokyoNightStorm,
-	Theme::TokyoNightLight,
-	Theme::KanagawaWave,
-	Theme::KanagawaDragon,
-	Theme::KanagawaLotus,
-	Theme::Moonfly,
-	Theme::Nightfly,
-	Theme::Oxocarbon,
-];
-
 impl Editor {
 	fn new() -> (Self, Task<Message>) {
 		let (theme, syntax) = if let Some(config) = &*config::CONFIG {
@@ -176,7 +152,7 @@ impl Editor {
 				modal_shown: false,
 				modal_type: ModalType::About,
 				theme,
-				themes: State::new(THEMES.to_vec()),
+				themes: State::new(Theme::ALL.to_vec()),
 				highlighter_theme: syntax,
 				highlighter_themes: State::new(highlighter::Theme::ALL.to_vec()),
 			},
@@ -214,7 +190,7 @@ impl Editor {
 	}
 
 	#[allow(clippy::too_many_lines)]
-	fn update(&mut self, message: Message) {
+	fn update(&mut self, message: Message) -> Task<Message> {
 		match message {
 			Message::Edit(action) => {
 				assert!(self.current < self.files.len());
@@ -226,7 +202,7 @@ impl Editor {
 				self.files[self.current].content.perform(action);
 			}
 			Message::Open => {
-				let _ = Task::perform(pick_file(), Message::FileOpened);
+				return Task::perform(pick_file(), Message::FileOpened)
 			}
 			Message::FileOpened(Ok((path, content))) => {
 				assert!(self.current < self.files.len());
@@ -251,17 +227,17 @@ impl Editor {
 
 				let text = self.files[self.current].content.text();
 
-				let _ = Task::perform(
+				return Task::perform(
 					save_file(self.files[self.current].path.clone(), text),
 					Message::FileSaved,
-				);
+				)
 			}
 			Message::SaveAs => {
 				assert!(self.current < self.files.len());
 
 				let text = self.files[self.current].content.text();
 
-				let _ = Task::perform(save_file(None, text), Message::FileSaved);
+				return Task::perform(save_file(None, text), Message::FileSaved)
 			}
 			Message::FileSaved(Ok(path)) => {
 				assert!(self.current < self.files.len());
@@ -340,6 +316,8 @@ impl Editor {
 			}
 			Message::None => {}
 		}
+		
+		Task::none()
 	}
 
 	#[allow(clippy::too_many_lines)]
@@ -537,6 +515,8 @@ impl Editor {
 }
 
 async fn pick_file() -> Result<(PathBuf, Arc<String>), Error> {
+	println!("pick_file called");
+	
 	let handle = rfd::AsyncFileDialog::new()
 		.set_title("Open File:")
 		.pick_file()

@@ -91,6 +91,7 @@ pub fn tab(
 					button(icons::close_icon(16))
 						.width(Length::Shrink)
 						.on_press(Message::CloseIndex(index))
+						.style(button::text)
 				]
 				.align_y(Alignment::Center)
 		)
@@ -121,6 +122,7 @@ pub fn about_modal<'a>(theme: &Theme) -> Element<'a, Message> {
 			button(icons::close_icon(16))
 				.width(Length::Shrink)
 				.on_press(Message::HideModal)
+				.style(button::text)
 		].align_y(Alignment::Center),
 		Column::new()
 			.push(text("Multi Tab Text Editor"))
